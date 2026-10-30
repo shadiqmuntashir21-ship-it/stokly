@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: "Retail management dan inventory yang sederhana dan terintegrasi.",
   applicationName:"STOKLY",
   appleWebApp:{capable:true,title:"STOKLY",statusBarStyle:"default"},
-  icons:{icon:"/icons/icon.svg",apple:"/icons/icon.svg"}
+  icons:{icon:"/icons/icon.svg",apple:"/icons/icon-192.png"}
 };
 export const viewport: Viewport = {width:"device-width",initialScale:1,themeColor:"#123e3a"};
 export default function RootLayout({children}: Readonly<{children:React.ReactNode}>) {

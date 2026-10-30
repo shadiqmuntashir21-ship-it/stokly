@@ -22,7 +22,15 @@ Manifest and navigation-only network-first service worker. Private pages are nev
 Production self-signup disabled. Roles are assigned server-side in `user_roles`; accounts without a role are blocked. Do not put DB credentials in client code, Git, or public artifacts. Protect both preview and production deployments. Migration scripts require review and must never run against production without approval.
 
 ## Limitations
-The current foundation supports product creation, single-item completed sales, receipts, read-only reporting, and owner/admin/marketing sessions. Return UI is deliberately disabled pending a safe item picker; outgoing goods, supplier management, payment states, advanced financial reporting, invitations, and KPI are not ready. Inventory screens are prototypes pending UAT. Never present this as a completed retail system.
+The development branch currently includes role-protected pages for products, goods receipts/issues, single-product sales, sale returns and read-only reporting. Financial refunds, refunds/net revenue, supplier integration, user invitations, and full stocktaking are NOT yet supported.n, single-item completed sales, receipts, read-only reporting, and owner/admin/marketing sessions. Return UI is deliberately disabled pending a safe item picker; outgoing goods, supplier management, payment states, advanced financial reporting, invitations, and KPI are not ready. Inventory screens are prototypes pending UAT. Never present this as a completed retail system.
 
 ## Environments
 GitHub feature branch `feat/pwa-foundation`, Neon development branch `br-silent-pond-b43s305n`; main and Neon production are not modified.
+
+## Development migrations
+
+Apply `database/000_auth.sql`, `database/001_core.sql`, and `database/002_goods_issues.sql` in that order to a dedicated Neon development branch. They have been applied to the STOKLY development branch. Never apply to production without a reviewed migration plan.
+
+PWA PNG icons are served at `/icons/icon-192.png` and `/icons/icon-512.png` from Next.js route handlers. Verify image generation and Chrome/Safari installability in CI and in-browser prior to release.
+
+CI is compile/test only and does not deploy.

@@ -86,7 +86,7 @@ export async function returnSale(input:{saleId:string;productId:string;quantity:
 export async function summary(){
  const [totals,low,trend]=await Promise.all([
   query<{sales_total:string;sales_count:string;product_count:string}>(
-    `SELECT (SELECT COALESCE(SUM(total),0)::text FROM sales WHERE status='completed' AND created_at::date=CURRENT_DATE) sales_total,(SELECT COUNT(*)::text FROM sales WHERE status='completed' AND created_at::date=CURRENT_DATE) sales_count,(SELECT COUNT(*)::text FROM products WHERE active=true) product_count`),
+    `SELECT (SELECT COALESCE(SUM(total),0)::text FROM sales WHERE status='completed' AND (created_at AT TIME ZONE 'Asia/Jakarta')::date=(now() AT TIME ZONE 'Asia/Jakarta')::date) sales_total,(SELECT COUNT(*)::text FROM sales WHERE status='completed' AND (created_at AT TIME ZONE 'Asia/Jakarta')::date=(now() AT TIME ZONE 'Asia/Jakarta')::date) sales_count,(SELECT COUNT(*)::text FROM products WHERE active=true) product_count`),
   query<{count:string}>(`SELECT COUNT(*)::text count FROM products p LEFT JOIN inventory_balances b ON b.product_id=p.id WHERE p.active=true AND COALESCE(b.quantity,0)<=p.min_stock`),
   query<{day:string;total:string}>(`SELECT to_char(date_trunc('day',created_at),'DD Mon') day,SUM(total)::text total FROM sales WHERE status='completed' AND created_at>=now()-interval '7 days' GROUP BY date_trunc('day',created_at) ORDER BY date_trunc('day',created_at)`)
  ]);
