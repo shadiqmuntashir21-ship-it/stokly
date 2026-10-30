@@ -15,7 +15,6 @@ export default async function Setup() {
     <form action={createFirstOwner} className="stack-form">
       <label>Kode aktivasi<input type="password" name="setupToken" minLength={32} required autoComplete="off"/></label>
       <label>Nama pemilik<input name="name" minLength={2} maxLength={90} required autoComplete="name"/></label>
-      <label>Username<input type="text" name="username" required autoComplete="username"/></label>
       <label>PIN baru (8 angka)<input type="password" name="pin" inputMode="numeric" pattern="[0-9]{8}" minLength={8} maxLength={8} required autoComplete="new-password"/></label>
       <button className="primary-button" type="submit">Aktifkan akun Owner</button>
     </form>
