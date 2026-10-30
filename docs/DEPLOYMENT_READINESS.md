@@ -1,0 +1,12 @@
+# STOKLY first production release — operating limits
+- Current release is a limited MVP, not the entire original PRD.
+- Initial Owner account is created only via /setup with a high-entropy server-side STOKLY_SETUP_TOKEN, used once.
+- Public signup at /api/auth/sign-up/email must remain disabled.
+- Owner, admin and marketing roles are checked server-side, but there is no team invitation/management UI yet.
+- Sales supports one item per transaction; payment settlement is not integrated.
+- Returns record stock condition, not financial refund processing.
+- Supplier master data, multi-location, export, KPI and advanced reporting remain future milestones.
+- PWA installability requires real device verification after release; HTTP build passing does not prove installability.
+- Never cache authenticated HTTP responses in service worker; offline transactions disabled.
+- Vercel production must connect to **Neon production** (not development), after reviewed migrations.
+- Production release is a single Vercel production deployment after source/code/config checks.
