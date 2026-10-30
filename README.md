@@ -1,29 +1,25 @@
 # STOKLY
+Retail Management PWA · Next.js / Neon PostgreSQL / Vercel
 
-Retail Management PWA — Next.js, Better Auth, Vercel, and Neon PostgreSQL.
+## Current access: 3 rooms
+- **Owner**: PIN required, server-side role checks, all modules. First account activated once at `/setup`, with secret `STOKLY_SETUP_TOKEN`.
+- **Admin**: Opens directly from `/rooms` on a trusted device; no daily login.
+- **Marketing**: Opens directly from `/rooms` on a trusted device; no daily login.
+- **Device onboarding**: Owner uses PIN once on the staff device at `/login?activate=1`, then approves it at `/devices/activate`. No invite/QR/account needed.
+- **Device revocation**: Owner uses `/devices`. New staff can use an already-approved device without changing credentials.
+- **Change Owner PIN**: `/settings/security`.
 
-## Login and access
+Room access is enforced by trusted-device server tokens and by Owner authentication. Do not remove these server checks: a public URL alone must never grant write access.
 
-The active development branch uses **username + individual 8-digit PIN** for Owner, Admin and Marketing. Better Auth's username plugin verifies PIN hashes; the app does not store raw PINs. Public signup/email login are disabled. Login attempts have database-backed rate limiting (five requests per ten-minute window per IP).
-
-First Owner: visit `/setup` and supply the server-side `STOKLY_SETUP_TOKEN` along with name, username and PIN. This setup may be completed only once. The Owner creates Admin and Marketing accounts from `/users`. Never send PINs or setup tokens in chat or commit them to Git. Email is still used internally as a unique placeholder in Better Auth, not as a sign-in field.
-
-## Environments
-
-- GitHub development: `feat/pwa-foundation`.
-- Neon development: `br-silent-pond-b43s305n`.
-- Existing production Vercel deployment is on an earlier commit and still uses email/password. **Changes in development are not live until specifically deployed.**
-
-## Database migration order
-
-Apply `database/000_auth.sql`, `database/001_core.sql`, `database/002_goods_issues.sql`, then `database/003_username_pin.sql` in order. The username/PIN migration was applied only to Neon Development. Before a future production release, review the schema, create a backup/recovery plan, and apply the new migration to Production.
+## Database
+Development branch: `br-silent-pond-b43s305n`.
+Migrations in order: `000_auth.sql`, `001_core.sql`, `002_goods_issues.sql`, `003_username_pin.sql`, `004_trusted_rooms.sql`. Use database backups/restore plan before any production changes. Never commit PINs, setup tokens or connection credentials.
 
 ## Verification
+`npm install`, `npm run check`, `npm run build`.
+Perform browser UAT for Owner PIN, device provisioning, switching rooms, revoke lost device, stock transactions, sales and PWA installation.
 
-Run `npm install`, `npm run check`, `npm run build`. Test Owner setup, username sign-in, permissions, rate limiting, PWA installability, and live inventory transaction flows with development data. Do not use the old email bootstrap script.
+## Limitations
+This is an early MVP: public staff rooms operate through shared service identities on approved devices, so individual staff actions cannot be attributed to a person. Payments/refunds and multi-location are not complete. The web browser needs internet to record transactions.
 
-## Operating limits
-
-This is an early MVP: single-product sales, goods receipts/issues, stock ledger, basic sales returns, reports and role-protected dashboard. Payment/refund processing, user PIN reset, stocktaking, multi-location, supplier management and other advanced features are not complete. Avoid live business transactions until UAT.
-
-Production deployment is NOT part of this development-only login change.
+See `docs/ROOM_BASED_ACCESS.md` for threat model and complete workflow.
