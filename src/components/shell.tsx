@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Package, PackagePlus, ShoppingCart, RotateCcw, ChartColumn, LogOut, Menu, X, Users } from "lucide-react";
+import { LayoutDashboard, Package, PackagePlus, ShoppingCart, RotateCcw, ChartColumn, LogOut, Menu, X, Users, KeyRound } from "lucide-react";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import type { Actor } from "@/lib/access";
@@ -14,7 +14,8 @@ const links = [
   {href:"/sales",label:"Penjualan",icon:ShoppingCart,roles:["owner","admin","marketing"]},
   {href:"/returns",label:"Retur",icon:RotateCcw,roles:["owner","admin"]},
   {href:"/reports",label:"Laporan",icon:ChartColumn,roles:["owner","admin"]},
-  {href:"/users",label:"Pengguna",icon:Users,roles:["owner"]}
+  {href:"/users",label:"Pengguna",icon:Users,roles:["owner"]},
+  {href:"/settings/security",label:"Ganti PIN",icon:KeyRound,roles:["owner","admin","marketing"]}
 ];
 export function Shell({actor,children}:{actor:Actor;children:React.ReactNode}) {
   const pathname=usePathname(); const [open,setOpen]=useState(false);
