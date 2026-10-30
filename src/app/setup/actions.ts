@@ -14,7 +14,7 @@ export async function createFirstOwner(form: FormData) {
   const expected=process.env.STOKLY_SETUP_TOKEN;
   const secret=String(form.get("setupToken")||"");
   const name=String(form.get("name")||"").trim();
-  const username=normalizeUsername(String(form.get("username")||""));
+  const username=normalizeUsername("owner.stokly");
   const pin=String(form.get("pin")||"");
   if(!expected || expected.length<32 || !secureEqual(secret,expected)){
     throw new Error("Kode aktivasi tidak valid.");
