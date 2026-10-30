@@ -12,7 +12,7 @@ export const auth = betterAuth({
     storage: "database",
     customRules: { "/sign-in/username": { window: 600, max: 5 }, "/change-password": { window: 600, max: 5 } }
   },
-  session: { cookieCache: { enabled: true, maxAge: 60 } },
+  session: { expiresIn: 60*30, updateAge: 60*10, cookieCache: { enabled: true, maxAge: 60 } },
   plugins: [
     username({ displayUsername: false, immutableUsername: true, minUsernameLength: 3, maxUsernameLength: 30 }),
     nextCookies()
