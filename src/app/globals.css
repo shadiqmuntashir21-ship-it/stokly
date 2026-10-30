@@ -2,3 +2,21 @@
 
 .side-nav{overflow-y:auto;min-height:0;overscroll-behavior:contain}
 :focus-visible{outline:2px solid #327e67;outline-offset:3px}
+
+/* Three-room landing and trusted-device onboarding */
+.rooms-screen{min-height:100dvh;display:grid;place-items:center;padding:25px 15px;background:radial-gradient(ellipse at top left,#e0eee7,transparent 48%),#f6f8f7}
+.rooms-card{width:min(580px,100%);background:white;border:1px solid var(--line);border-radius:23px;padding:42px;box-shadow:0 28px 95px #173d3212}
+.rooms-card h1{font-size:30px;letter-spacing:-.9px;margin:0 0 12px}
+.room-choices{display:grid;gap:13px;margin-top:28px}
+.room-choice{font:inherit;width:100%;min-height:92px;border:1px solid #e4ebe7;background:white;border-radius:13px;display:flex;align-items:center;text-align:left;padding:18px;gap:15px;cursor:pointer}
+.room-choice:hover:not(:disabled){border-color:#7cb69a;background:#f9fcfa}
+.room-choice:disabled{opacity:.48;cursor:not-allowed}
+.room-choice>span:nth-child(2){flex:1}
+.room-choice strong,.room-choice small{display:block}
+.room-choice strong{font-size:15px;color:var(--ink)}
+.room-choice small{font-size:12px;line-height:1.5;margin-top:5px;color:var(--muted)}
+.room-choice>span:last-child{font-size:22px;color:#819990}
+.room-icon{display:grid;place-items:center;width:49px;height:49px;background:#e9f3ed;color:#215c4a;font-size:24px;border-radius:13px}
+.room-hint{margin-top:20px;border-radius:11px;background:#edf5f0;padding:17px;color:#325e50;line-height:1.7}
+.room-hint a{color:#145e48;text-decoration:underline}
+@media(max-width:760px){.rooms-card{padding:29px 21px}.rooms-card h1{font-size:25px}.room-choice{min-height:82px;padding:14px}.room-icon{width:44px;height:44px}}
