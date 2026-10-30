@@ -88,7 +88,7 @@ export async function summary(){
   query<{sales_total:string;sales_count:string;product_count:string}>(
     `SELECT (SELECT COALESCE(SUM(total),0)::text FROM sales WHERE status='completed' AND (created_at AT TIME ZONE 'Asia/Jakarta')::date=(now() AT TIME ZONE 'Asia/Jakarta')::date) sales_total,(SELECT COUNT(*)::text FROM sales WHERE status='completed' AND (created_at AT TIME ZONE 'Asia/Jakarta')::date=(now() AT TIME ZONE 'Asia/Jakarta')::date) sales_count,(SELECT COUNT(*)::text FROM products WHERE active=true) product_count`),
   query<{count:string}>(`SELECT COUNT(*)::text count FROM products p LEFT JOIN inventory_balances b ON b.product_id=p.id WHERE p.active=true AND COALESCE(b.quantity,0)<=p.min_stock`),
-  query<{day:string;total:string}>(`SELECT to_char(date_trunc('day',created_at),'DD Mon') day,SUM(total)::text total FROM sales WHERE status='completed' AND created_at>=now()-interval '7 days' GROUP BY date_trunc('day',created_at) ORDER BY date_trunc('day',created_at)`)
+  query<{day_label:string;total:string}>(`SELECT to_char(date_trunc('day',created_at),'DD Mon') AS day_label,SUM(total)::text AS total FROM sales WHERE status='completed' AND created_at>=now()-interval '7 days' GROUP BY date_trunc('day',created_at) ORDER BY date_trunc('day',created_at)`)
  ]);
  return {total:Number(totals[0]?.sales_total||0),count:Number(totals[0]?.sales_count||0),products:Number(totals[0]?.product_count||0),low:Number(low[0]?.count||0),trend};
 }
