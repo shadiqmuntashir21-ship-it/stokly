@@ -1,14 +1,20 @@
 import { betterAuth } from "better-auth";
+import { username } from "better-auth/plugins";
 import { nextCookies } from "better-auth/next-js";
 import { getPool } from "@/lib/db";
 
 export const auth = betterAuth({
   database: getPool(),
-  emailAndPassword: {
+  emailAndPassword: { enabled: true, disableSignUp: true, minPasswordLength: 8, maxPasswordLength: 8 },
+  disabledPaths: ["/sign-in/email", "/is-username-available"],
+  rateLimit: {
     enabled: true,
-    disableSignUp: !(process.env.NODE_ENV !== "production" && process.env.STOKLY_BOOTSTRAP_ENABLED === "1"),
-    minPasswordLength: 12
+    storage: "database",
+    customRules: { "/sign-in/username": { window: 600, max: 5 } }
   },
   session: { cookieCache: { enabled: true, maxAge: 60 } },
-  plugins: [nextCookies()]
+  plugins: [
+    username({ displayUsername: false, immutableUsername: true, minUsernameLength: 3, maxUsernameLength: 30 }),
+    nextCookies()
+  ]
 });
