@@ -16,11 +16,10 @@ export async function createFirstOwner(form: FormData) {
   const name=String(form.get("name")||"").trim();
   const username=normalizeUsername("owner.stokly");
   const pin=String(form.get("pin")||"");
-  if(!expected || expected.length<32 || !secureEqual(secret,expected)){
-    throw new Error("Kode aktivasi tidak valid.");
-  }
+  if(!expected || expected.length<32) redirect("/setup?error=config");
+  if(!secureEqual(secret,expected)) redirect("/setup?error=code");
   if(name.length<2 || name.length>90 || !username || !validPin(pin)){
-    throw new Error("Nama, username atau PIN tidak valid.");
+    redirect("/setup?error=pin");
   }
   const client=await getPool().connect();
   try {
