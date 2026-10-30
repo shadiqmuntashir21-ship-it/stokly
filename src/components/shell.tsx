@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Package, PackagePlus, ShoppingCart, RotateCcw, ChartColumn, LogOut, Menu, X, Users, KeyRound } from "lucide-react";
+import { LayoutDashboard, Package, PackagePlus, ShoppingCart, RotateCcw, ChartColumn, LogOut, Menu, X, KeyRound, ShieldCheck, LayoutGrid } from "lucide-react";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import type { Actor } from "@/lib/access";
@@ -14,18 +14,19 @@ const links = [
   {href:"/sales",label:"Penjualan",icon:ShoppingCart,roles:["owner","admin","marketing"]},
   {href:"/returns",label:"Retur",icon:RotateCcw,roles:["owner","admin"]},
   {href:"/reports",label:"Laporan",icon:ChartColumn,roles:["owner","admin"]},
-  {href:"/users",label:"Pengguna",icon:Users,roles:["owner"]},
-  {href:"/settings/security",label:"Ganti PIN",icon:KeyRound,roles:["owner","admin","marketing"]}
+  {href:"/devices",label:"Perangkat",icon:ShieldCheck,roles:["owner"]},
+  {href:"/settings/security",label:"Ganti PIN Owner",icon:KeyRound,roles:["owner"]},
+  {href:"/rooms",label:"Pilih Room",icon:LayoutGrid,roles:["owner","admin","marketing"]}
 ];
 export function Shell({actor,children}:{actor:Actor;children:React.ReactNode}) {
   const pathname=usePathname(); const [open,setOpen]=useState(false);
   const visible=links.filter((link)=>link.roles.includes(actor.role));
-  async function signOut(){await authClient.signOut();window.location.assign("/login");}
+  async function signOut(){if(actor.role==="owner")await authClient.signOut();window.location.assign("/rooms");}
   return <div className="app-shell">
     <aside className={"sidebar "+(open?"sidebar-open":"")}>
       <div className="sidebar-top"><div className="logo-lockup"><span className="logo-glyph">S.</span><span>STOKLY<small>RETAIL MANAGEMENT</small></span></div><button className="mobile-close" aria-label="Tutup menu" onClick={()=>setOpen(false)}><X size={20}/></button></div>
       <p className="side-label">WORKSPACE</p><nav className="side-nav" aria-label="Navigasi utama">{visible.map(({href,label,icon:Icon})=><Link key={href} onClick={()=>setOpen(false)} className={"nav-link "+(pathname===href?"nav-active":"")} href={href}><Icon size={19}/>{label}</Link>)}</nav>
-      <div className="sidebar-bottom"><div className="user-info"><span className="avatar">{actor.name.charAt(0).toUpperCase()}</span><span><b>{actor.name}</b><small>{actor.role==="owner"?"Owner":actor.role==="admin"?"Admin Operasional":"Marketing"}</small></span></div><button className="logout-button" onClick={signOut}><LogOut size={17}/> Keluar</button></div>
+      <div className="sidebar-bottom"><div className="user-info"><span className="avatar">{actor.name.charAt(0).toUpperCase()}</span><span><b>{actor.name}</b><small>{actor.role==="owner"?"Owner":actor.role==="admin"?"Admin Operasional":"Marketing"}</small></span></div><button className="logout-button" onClick={signOut}><LogOut size={17}/>{actor.role==="owner"?"Kunci Room Owner":"Pilih Room"}</button></div>
     </aside>
     {open && <button className="side-backdrop" aria-label="Tutup menu" onClick={()=>setOpen(false)} />}
     <div className="main-area"><header className="topbar"><button className="menu-button" aria-label="Buka menu" onClick={()=>setOpen(true)}><Menu size={23}/></button><span className="mobile-brand">STOKLY</span><div className="topbar-right"><span className="live-pill"><i/> Sistem online</span><span className="top-avatar">{actor.name.charAt(0).toUpperCase()}</span></div></header><main className="content">{children}</main></div>
