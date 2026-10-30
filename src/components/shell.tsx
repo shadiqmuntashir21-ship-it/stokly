@@ -10,6 +10,7 @@ const links = [
   {href:"/dashboard",label:"Dashboard",icon:LayoutDashboard,roles:["owner","admin","marketing"]},
   {href:"/products",label:"Produk & Stok",icon:Package,roles:["owner","admin","marketing"]},
   {href:"/receipts",label:"Barang Masuk",icon:PackagePlus,roles:["owner","admin"]},
+  {href:"/issues",label:"Barang Keluar",icon:PackagePlus,roles:["owner","admin"]},
   {href:"/sales",label:"Penjualan",icon:ShoppingCart,roles:["owner","admin","marketing"]},
   {href:"/returns",label:"Retur",icon:RotateCcw,roles:["owner","admin"]},
   {href:"/reports",label:"Laporan",icon:ChartColumn,roles:["owner","admin"]}

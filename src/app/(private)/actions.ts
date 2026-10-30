@@ -2,7 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireActor } from "@/lib/access";
-import { createProduct,receipt,sell,returnSale } from "@/lib/operations";
+import { createProduct, receipt, sell, returnSale, issueGoods } from "@/lib/operations";
 const val=(form:FormData,key:string)=>String(form.get(key)||"");
 const num=(form:FormData,key:string)=>Number(form.get(key));
 export async function addProduct(form:FormData){
@@ -22,6 +22,14 @@ export async function addSale(form:FormData){
 }
 export async function addReturn(form:FormData){
  const actor=await requireActor(["owner","admin"]);
- await returnSale({saleId:val(form,"sale"),productId:val(form,"product"),quantity:num(form,"quantity"),restock:val(form,"restock")==="yes",note:val(form,"note")},actor.id);
+ const line=val(form,"line").split("|");
+ if(line.length!==2) throw new Error("Pilih transaksi dan produk retur.");
+ await returnSale({saleId:line[0],productId:line[1],quantity:num(form,"quantity"),restock:val(form,"restock")==="yes",note:val(form,"note")},actor.id);
  revalidatePath("/dashboard");revalidatePath("/products");redirect("/returns?success=1");
+}
+
+export async function addIssue(form:FormData){
+ const actor=await requireActor(["owner","admin"]);
+ await issueGoods({productId:val(form,"product"),quantity:num(form,"quantity"),reason:val(form,"reason")},actor.id);
+ revalidatePath("/dashboard");revalidatePath("/products");revalidatePath("/reports");redirect("/issues?success=1");
 }

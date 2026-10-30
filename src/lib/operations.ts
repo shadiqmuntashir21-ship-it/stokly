@@ -2,7 +2,6 @@ import { transaction, query } from "@/lib/db";
 import type { Role } from "@/lib/access";
 
 export class BusinessError extends Error {}
-const numeric=(v:FormDataEntryValue|null)=>Number(v);
 function positiveInteger(v:number){return Number.isSafeInteger(v)&&v>0}
 function money(v:number){return Number.isFinite(v)&&v>=0&&Number.isSafeInteger(Math.round(v*100))}
 
@@ -92,4 +91,20 @@ export async function summary(){
   query<{day:string;total:string}>(`SELECT to_char(date_trunc('day',created_at),'DD Mon') day,SUM(total)::text total FROM sales WHERE status='completed' AND created_at>=now()-interval '7 days' GROUP BY date_trunc('day',created_at) ORDER BY date_trunc('day',created_at)`)
  ]);
  return {total:Number(totals[0]?.sales_total||0),count:Number(totals[0]?.sales_count||0),products:Number(totals[0]?.product_count||0),low:Number(low[0]?.count||0),trend};
+}
+
+export async function issueGoods(input:{productId:string;quantity:number;reason:string},actorId:string){
+ if(!positiveInteger(input.quantity)||!input.reason.trim()||input.reason.length>400)throw new BusinessError("Jumlah atau alasan pengeluaran tidak valid.");
+ return transaction(async c=>{
+   const current=await c.query<{quantity:number}>(`SELECT b.quantity FROM inventory_balances b JOIN products p ON p.id=b.product_id WHERE b.product_id=$1 AND p.active=true FOR UPDATE OF b`,[input.productId]);
+   if(!current.rows[0])throw new BusinessError("Produk tidak ditemukan.");
+   if(current.rows[0].quantity<input.quantity)throw new BusinessError("Stok tidak mencukupi.");
+   const result=await c.query<{id:string}>("INSERT INTO goods_issues(product_id,quantity,reason,created_by) VALUES($1,$2,$3,$4) RETURNING id",
+   [input.productId,input.quantity,input.reason.trim(),actorId]);
+   await c.query("UPDATE inventory_balances SET quantity=quantity-$2,updated_at=now() WHERE product_id=$1",[input.productId,input.quantity]);
+   await c.query("INSERT INTO stock_movements(product_id,quantity_delta,source_type,source_id,actor_id) VALUES($1,$2,'adjustment',$3,$4)",
+     [input.productId,-input.quantity,result.rows[0].id,actorId]);
+   await c.query("INSERT INTO activity_logs(actor_id,action,entity,entity_id) VALUES($1,'goods.issue','goods_issue',$2)",[actorId,result.rows[0].id]);
+   return result.rows[0].id;
+ });
 }
