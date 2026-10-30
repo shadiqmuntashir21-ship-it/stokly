@@ -34,3 +34,6 @@ Apply `database/000_auth.sql`, `database/001_core.sql`, and `database/002_goods_
 PWA PNG icons are served at `/icons/icon-192.png` and `/icons/icon-512.png` from Next.js route handlers. Verify image generation and Chrome/Safari installability in CI and in-browser prior to release.
 
 CI is compile/test only and does not deploy.
+
+## Owner & staff onboarding
+The first owner must visit `/setup` and enter a one-time high-entropy `STOKLY_SETUP_TOKEN` stored only in Vercel. Public sign-up remains disabled. Once the owner is created, `/setup` redirects to `/login`. Owner can create admin and marketing accounts at `/users`.
