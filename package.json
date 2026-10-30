@@ -7,8 +7,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "check": "tsc --noEmit",
-    "bootstrap:owner": "tsx scripts/bootstrap-owner.ts"
+    "check": "tsc --noEmit"
   },
   "dependencies": {
     "@vercel/functions": "^3.2.0",
