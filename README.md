@@ -1,39 +1,29 @@
 # STOKLY
 
-**Retail Management & Inventory System** — Next.js + PostgreSQL + PWA.
+Retail Management PWA — Next.js, Better Auth, Vercel, and Neon PostgreSQL.
 
-## Status
-Foundation and operational MVP under construction on `feat/pwa-foundation`. **Not production ready.** No production deployment is authorized.
+## Login and access
 
-## Required
-Node.js 22+, npm, an isolated Neon development branch, and a private `.env.local`.
+The active development branch uses **username + individual 8-digit PIN** for Owner, Admin and Marketing. Better Auth's username plugin verifies PIN hashes; the app does not store raw PINs. Public signup/email login are disabled. Login attempts have database-backed rate limiting (five requests per ten-minute window per IP).
 
-1. `npm install`
-2. `cp .env.example .env.local` and enter the **development** connection string and auth secret.
-3. `npx auth@latest migrate` for Better Auth schema. Verify generated schema before applying it.
-4. Apply `database/001_core.sql` against development database.
-5. Run `STOKLY_BOOTSTRAP_ENABLED=1 OWNER_EMAIL=... OWNER_PASSWORD=... OWNER_NAME=... npm run bootstrap:owner` in development only, with `STOKLY_BOOTSTRAP_ENABLED=1` in the *same* environment; ensure Better Auth signup is enabled just for this process. Delete credentials from shell history and environment afterward.
-6. `npm run dev` and complete manual UAT.
-
-## PWA
-Manifest and navigation-only network-first service worker. Private pages are never cached. Offline transactions are disabled. Installable icons must be present. Test install behavior in Chrome on Android and Safari on iOS. Service worker updates require review and testing.
-
-## Security
-Production self-signup disabled. Roles are assigned server-side in `user_roles`; accounts without a role are blocked. Do not put DB credentials in client code, Git, or public artifacts. Protect both preview and production deployments. Migration scripts require review and must never run against production without approval.
-
-## Limitations
-The development branch currently includes role-protected pages for products, goods receipts/issues, single-product sales, sale returns and read-only reporting. Financial refunds, refunds/net revenue, supplier integration, user invitations, and full stocktaking are NOT yet supported.n, single-item completed sales, receipts, read-only reporting, and owner/admin/marketing sessions. Return UI is deliberately disabled pending a safe item picker; outgoing goods, supplier management, payment states, advanced financial reporting, invitations, and KPI are not ready. Inventory screens are prototypes pending UAT. Never present this as a completed retail system.
+First Owner: visit `/setup` and supply the server-side `STOKLY_SETUP_TOKEN` along with name, username and PIN. This setup may be completed only once. The Owner creates Admin and Marketing accounts from `/users`. Never send PINs or setup tokens in chat or commit them to Git. Email is still used internally as a unique placeholder in Better Auth, not as a sign-in field.
 
 ## Environments
-GitHub feature branch `feat/pwa-foundation`, Neon development branch `br-silent-pond-b43s305n`; main and Neon production are not modified.
 
-## Development migrations
+- GitHub development: `feat/pwa-foundation`.
+- Neon development: `br-silent-pond-b43s305n`.
+- Existing production Vercel deployment is on an earlier commit and still uses email/password. **Changes in development are not live until specifically deployed.**
 
-Apply `database/000_auth.sql`, `database/001_core.sql`, and `database/002_goods_issues.sql` in that order to a dedicated Neon development branch. They have been applied to the STOKLY development branch. Never apply to production without a reviewed migration plan.
+## Database migration order
 
-PWA PNG icons are served at `/icons/icon-192.png` and `/icons/icon-512.png` from Next.js route handlers. Verify image generation and Chrome/Safari installability in CI and in-browser prior to release.
+Apply `database/000_auth.sql`, `database/001_core.sql`, `database/002_goods_issues.sql`, then `database/003_username_pin.sql` in order. The username/PIN migration was applied only to Neon Development. Before a future production release, review the schema, create a backup/recovery plan, and apply the new migration to Production.
 
-CI is compile/test only and does not deploy.
+## Verification
 
-## Owner & staff onboarding
-The first owner must visit `/setup` and enter a one-time high-entropy `STOKLY_SETUP_TOKEN` stored only in Vercel. Public sign-up remains disabled. Once the owner is created, `/setup` redirects to `/login`. Owner can create admin and marketing accounts at `/users`.
+Run `npm install`, `npm run check`, `npm run build`. Test Owner setup, username sign-in, permissions, rate limiting, PWA installability, and live inventory transaction flows with development data. Do not use the old email bootstrap script.
+
+## Operating limits
+
+This is an early MVP: single-product sales, goods receipts/issues, stock ledger, basic sales returns, reports and role-protected dashboard. Payment/refund processing, user PIN reset, stocktaking, multi-location, supplier management and other advanced features are not complete. Avoid live business transactions until UAT.
+
+Production deployment is NOT part of this development-only login change.
