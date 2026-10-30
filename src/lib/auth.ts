@@ -10,7 +10,7 @@ export const auth = betterAuth({
   rateLimit: {
     enabled: true,
     storage: "database",
-    customRules: { "/sign-in/username": { window: 600, max: 5 } }
+    customRules: { "/sign-in/username": { window: 600, max: 5 }, "/change-password": { window: 600, max: 5 } }
   },
   session: { cookieCache: { enabled: true, maxAge: 60 } },
   plugins: [
