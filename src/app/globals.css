@@ -54,3 +54,4 @@
 .order-submit{border-top:1px solid var(--line);padding:20px 24px;display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
 .order-submit span strong{display:block;font-size:21px;margin-top:6px}
 @media(max-width:760px){.order-items{padding:0 15px 15px}.order-item-row{grid-template-columns:minmax(0,1fr) 100px}.order-item-row .remove-line{grid-column:1 / -1;height:36px}.order-submit{padding:18px 15px}.order-submit button{width:100%}}
+\n.error-notice{background:#fff1ee;border:1px solid #efc0b8;color:#973a30;border-radius:10px;padding:13px 16px;line-height:1.5}\n

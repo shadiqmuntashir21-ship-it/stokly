@@ -5,5 +5,5 @@ export function PageHead({eyebrow,title,description,action}:{eyebrow:string;titl
 return <div className="page-head"><div><p className="eyebrow">{eyebrow}</p><h1>{title}</h1><p className="muted">{description}</p></div>{action&&<Link className="primary-button" href={action.href}>{action.label}</Link>}</div>;
 }
 export function Panel({title,children,detail}:{title:string;children:ReactNode;detail?:string}){return <section className="panel"><div className="panel-head"><h2>{title}</h2>{detail&&<span className="small-muted">{detail}</span>}</div>{children}</section>;}
-export function Notice({success}:{success?:string}){return success==="1"?<p className="success-notice">Data berhasil disimpan.</p>:null;}
+export function Notice({success,error}:{success?:string;error?:string}){return error?<p className="error-notice" role="alert">{error.slice(0,220)}</p>:success==="1"?<p className="success-notice">Data berhasil disimpan.</p>:null;}
 export function Empty({label}:{label:string}){return <div className="empty">Belum ada {label}. Data akan tampil setelah transaksi pertama.</div>}

@@ -1,4 +1,4 @@
-"use server";
+import {safeWrite} from "@/lib/safe-action";\n"use server";
 import {requireOwner} from "@/lib/access";
 import {addExpense} from "@/lib/expense-operations";
 import {revalidatePath} from "next/cache";
