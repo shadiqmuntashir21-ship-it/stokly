@@ -6,8 +6,8 @@ function positiveInteger(v:number){return Number.isSafeInteger(v)&&v>0}
 function money(v:number){return Number.isFinite(v)&&v>=0&&Number.isSafeInteger(Math.round(v*100))}
 
 export async function listProducts(){
-  return query<{id:string;sku:string;name:string;category:string;price:string;stock:number;min_stock:number}>(
-    "SELECT p.id,p.sku,p.name,p.category,p.price::text,COALESCE(b.quantity,0)::int AS stock,p.min_stock FROM products p LEFT JOIN inventory_balances b ON b.product_id=p.id WHERE p.active=true ORDER BY p.name");
+  return query<{id:string;sku:string;name:string;category:string;unit:string;description:string;price:string;stock:number;min_stock:number}>(
+    "SELECT p.id,p.sku,p.name,p.category,p.unit,p.description,p.price::text,COALESCE(b.quantity,0)::int AS stock,p.min_stock FROM products p LEFT JOIN inventory_balances b ON b.product_id=p.id WHERE p.active=true ORDER BY p.name");
 }
 export async function listSales(actorId:string, role:Role){
   return query<{id:string;number:string;created_at:Date;total:string;status:string;actor_name:string}>(
