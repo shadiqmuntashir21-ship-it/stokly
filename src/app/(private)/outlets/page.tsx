@@ -11,16 +11,16 @@ export default async function Outlets({searchParams}:{searchParams:Promise<{succ
  <label>Nama outlet<input name="name" required maxLength={180}/></label>
  <label>Nomor WhatsApp<input name="phone" type="tel" maxLength={40}/></label>
  <label>Nama PIC<input name="pic" maxLength={120}/></label>
- <label className="wide">Alamat<input name="address" maxLength={1000}/></label>
+ <label className="wide">Alamat<input name="address" maxLength={1000}/></label><label>Latitude<input name="lat" type="number" min="-90" max="90" step=".0000001" placeholder="-6.2000000"/></label><label>Longitude<input name="lng" type="number" min="-180" max="180" step=".0000001" placeholder="106.8166667"/></label>
  <button className="primary-button">Tambah Outlet</button></form></Panel>
  <Panel title="Daftar Outlet" detail={list.length+" outlet"}>{!list.length?<Empty label="outlet"/>:<div className="product-manage-list">{list.map(o=><section key={o.id} className="manage-item">
- <div className="manage-item-head"><div><strong>{o.name}</strong><p className="small-muted">{o.phone||"Tanpa nomor"} · {o.pic_name||"Tanpa PIC"} · {o.address||"Alamat belum diisi"}</p></div><span className={o.active?"status-success":"status-danger"}>{o.active?"Aktif":"Arsip"}</span></div>
+ <div className="manage-item-head"><div><strong>{o.name}</strong><p className="small-muted">{o.phone||"Tanpa nomor"} · {o.pic_name||"Tanpa PIC"} · {o.address||"Alamat belum diisi"}</p>{o.latitude!==null&&o.longitude!==null&&<p className="small-muted">📍 GPS tersimpan · <a target="_blank" rel="noopener noreferrer" href={"https://www.google.com/maps?q="+encodeURIComponent(o.latitude+","+o.longitude)}>Lihat lokasi di Maps</a></p>}</div><span className={o.active?"status-success":"status-danger"}>{o.active?"Aktif":"Arsip"}</span></div>
  {o.active&&<details className="edit-detail"><summary>Edit outlet</summary><form action={outletSave} className="form-grid">
  <input type="hidden" name="id" value={o.id}/>
  <label>Nama<input name="name" defaultValue={o.name} required/></label>
  <label>Telepon<input name="phone" defaultValue={o.phone}/></label>
  <label>PIC<input name="pic" defaultValue={o.pic_name}/></label>
- <label className="wide">Alamat<input name="address" defaultValue={o.address}/></label>
+ <label className="wide">Alamat<input name="address" defaultValue={o.address}/></label><label>Latitude<input name="lat" type="number" min="-90" max="90" step=".0000001" defaultValue={o.latitude??""}/></label><label>Longitude<input name="lng" type="number" min="-180" max="180" step=".0000001" defaultValue={o.longitude??""}/></label>
  <button className="primary-button">Simpan</button></form>
  {actor.role!=="marketing"&&<form action={outletArchive} className="archive-form"><input type="hidden" name="id" value={o.id}/><button className="danger-button">Arsipkan outlet</button></form>}</details>}
  </section>)}</div>}</Panel></>;
