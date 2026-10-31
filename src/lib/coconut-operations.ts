@@ -70,30 +70,40 @@ export async function listProduction(){
  return query<{id:string;production_date:string;supplier:string;product:string;coconut_used:number;peeled_qty:number;produced_qty:number}>(
  "SELECT pr.id::text,pr.production_date::text,s.name supplier,p.name product,pr.coconut_used,pr.peeled_qty,o.produced_qty FROM coconut_production pr JOIN coconut_batches b ON b.id=pr.batch_id JOIN coconut_receipts r ON r.id=b.receipt_id JOIN suppliers s ON s.id=r.supplier_id JOIN coconut_production_outputs o ON o.production_id=pr.id JOIN products p ON p.id=o.product_id ORDER BY pr.created_at DESC LIMIT 70");
 }
-export async function recordProduction(data:{requestKey:string;batchId:string;used:number;peeled:number;productId:string;output:number;note:string;date:string},actor:string){
+
+export async function recordProduction(data:{requestKey:string;batchId:string;used:number;peeled:number;outputs:{productId:string;quantity:number}[];note:string;date:string},actor:string){
  key(data.requestKey);
- if(!uid(data.batchId)||!uid(data.productId)||!integer(data.used)||!Number.isInteger(data.peeled)||data.peeled<0||data.peeled>data.used||!integer(data.output)||!/^\d{4}-\d{2}-\d{2}$/.test(data.date))throw new BusinessError("Data pengupasan atau hasil produksi tidak valid.");
+ if(!uid(data.batchId)||!integer(data.used)||!Number.isInteger(data.peeled)||data.peeled<0||data.peeled>data.used||
+  !/^\d{4}-\d{2}-\d{2}$/.test(data.date)||!Array.isArray(data.outputs)||data.outputs.length<1||data.outputs.length>20||
+  data.outputs.some(o=>!uid(o.productId)||!integer(o.quantity))||
+  new Set(data.outputs.map(o=>o.productId)).size!==data.outputs.length)
+  throw new BusinessError("Data pengupasan atau hasil produksi tidak valid.");
  return transaction(async c=>{
    const prior=await c.query<{id:string}>("SELECT id::text FROM coconut_production WHERE request_key=$1 AND created_by=$2",[data.requestKey,actor]);
    if(prior.rows[0])return prior.rows[0].id;
    const batch=await c.query<{available:number}>("SELECT accepted_qty-consumed_qty available FROM coconut_batches WHERE id=$1 FOR UPDATE",[data.batchId]);
    if(!batch.rows[0]||batch.rows[0].available<data.used)throw new BusinessError("Stok bahan baku lolos QC tidak mencukupi.");
-   const product=await c.query("SELECT id FROM products WHERE id=$1 AND active=true",[data.productId]);
-   if(!product.rowCount)throw new BusinessError("Produk jadi tidak aktif.");
+   const productIds=data.outputs.map(o=>o.productId).sort();
+   const products=await c.query<{id:string}>("SELECT id::text FROM products WHERE id=ANY($1::uuid[]) AND active=true ORDER BY id",[productIds]);
+   if(products.rowCount!==data.outputs.length)throw new BusinessError("Ada produk hasil yang tidak aktif.");
    const r=await c.query<{id:string}>(
     "INSERT INTO coconut_production(request_key,batch_id,coconut_used,peeled_qty,production_date,note,created_by) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id",
     [data.requestKey,data.batchId,data.used,data.peeled,data.date,str(data.note,400),actor]);
    await c.query("UPDATE coconut_batches SET consumed_qty=consumed_qty+$2 WHERE id=$1",[data.batchId,data.used]);
-   await c.query("INSERT INTO coconut_production_outputs(production_id,product_id,produced_qty) VALUES($1,$2,$3)",[r.rows[0].id,data.productId,data.output]);
-   const adjusted=await c.query("UPDATE inventory_balances SET quantity=quantity+$2,updated_at=now() WHERE product_id=$1",[data.productId,data.output]);
-   if(!adjusted.rowCount)throw new BusinessError("Saldo stok produk belum terdaftar.");
-   // V1 stock movement enum allows adjustment, not production; source_id still links exactly to a production row.
-   await c.query("INSERT INTO stock_movements(product_id,quantity_delta,source_type,source_id,actor_id) VALUES($1,$2,'adjustment',$3,$4)",
-    [data.productId,data.output,r.rows[0].id,actor]);
+   for(const productId of productIds){
+     const output=data.outputs.find(o=>o.productId===productId)!;
+     await c.query("INSERT INTO coconut_production_outputs(production_id,product_id,produced_qty) VALUES($1,$2,$3)",[r.rows[0].id,productId,output.quantity]);
+     const updated=await c.query("UPDATE inventory_balances SET quantity=quantity+$2,updated_at=now() WHERE product_id=$1",[productId,output.quantity]);
+     if(!updated.rowCount)throw new BusinessError("Saldo stok produk belum terdaftar.");
+     // Preserve V1 ledger source types, with production ID as source for audit.
+     await c.query("INSERT INTO stock_movements(product_id,quantity_delta,source_type,source_id,actor_id) VALUES($1,$2,'adjustment',$3,$4)",
+       [productId,output.quantity,r.rows[0].id,actor]);
+   }
    await c.query("INSERT INTO activity_logs(actor_id,action,entity,entity_id) VALUES($1,'coconut.production','production',$2)",[actor,r.rows[0].id]);
    return r.rows[0].id;
  });
 }
+
 export async function listVisits(){
  return query<{id:string;visited_on:string;outlet:string;staff_name:string;outcome:string;note:string;follow_up_on:string|null}>(
   "SELECT v.id::text,v.visited_on::text,o.name outlet,v.staff_name,v.outcome,v.note,v.follow_up_on::text FROM marketing_visits v JOIN outlets o ON o.id=v.outlet_id ORDER BY v.visited_on DESC,v.created_at DESC LIMIT 80");

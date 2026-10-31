@@ -28,7 +28,10 @@ export async function qcAction(f:FormData){
 }
 export async function productionAction(f:FormData){
  const a=await requireActor(["owner","admin"]);
- await recordProduction({requestKey:s(f,"requestKey"),batchId:s(f,"batchId"),used:n(f,"used"),peeled:n(f,"peeled"),productId:s(f,"productId"),output:n(f,"output"),date:s(f,"date"),note:s(f,"note")},a.id);
+ const parsed:unknown=JSON.parse(s(f,"outputs"));
+ if(!Array.isArray(parsed)) throw new Error("Daftar hasil produksi tidak valid.");
+ const outputs=parsed.map(x=>({productId:String(x.productId||""),quantity:Number(x.quantity)}));
+ await recordProduction({requestKey:s(f,"requestKey"),batchId:s(f,"batchId"),used:n(f,"used"),peeled:n(f,"peeled"),outputs,date:s(f,"date"),note:s(f,"note")},a.id);
  revalidatePath("/production");revalidatePath("/products");revalidatePath("/dashboard");redirect("/production?success=1");
 }
 export async function visitAction(f:FormData){
