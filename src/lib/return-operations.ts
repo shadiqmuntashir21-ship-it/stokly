@@ -64,25 +64,34 @@ export async function createV2Return(data:{requestKey:string;deliveryId:string;o
  });
 }
 export async function listComplaints(){
- return query<{id:string;outlet:string;number:string|null;category:string;description:string;status:string;resolution:string;created_at:Date}>(
- `SELECT c.id::text,o.name outlet,d.document_number number,c.category,c.description,c.status,c.resolution,c.created_at
- FROM outlet_complaints c JOIN outlets o ON o.id=c.outlet_id LEFT JOIN delivery_notes d ON d.id=c.delivery_id
+ return query<{id:string;outlet:string;number:string|null;product:string|null;category:string;description:string;status:string;resolution:string;created_at:Date}>(
+ `SELECT c.id::text,o.name outlet,d.document_number number,p.name product,c.category,c.description,c.status,c.resolution,c.created_at
+ FROM outlet_complaints c JOIN outlets o ON o.id=c.outlet_id LEFT JOIN delivery_notes d ON d.id=c.delivery_id LEFT JOIN products p ON p.id=c.product_id
  ORDER BY c.created_at DESC LIMIT 80`);
 }
-export async function reportComplaint(data:{requestKey:string;outletId:string;deliveryId:string;category:string;description:string},actor:string){
- if(!uuid(data.requestKey)||!uuid(data.outletId)||data.deliveryId&&!uuid(data.deliveryId)||
+export async function reportComplaint(data:{requestKey:string;outletId:string;deliveryId:string;productId:string;category:string;description:string},actor:string){
+ if(!uuid(data.requestKey)||!uuid(data.outletId)||data.deliveryId&&!uuid(data.deliveryId)||data.productId&&!uuid(data.productId)||
  !["quality","quantity","delivery","price","other"].includes(data.category)||data.description.trim().length<5)
  throw new BusinessError("Data komplain belum lengkap.");
  return transaction(async c=>{
   const old=await c.query<{id:string}>("SELECT id::text FROM outlet_complaints WHERE request_key=$1 AND opened_by=$2",[data.requestKey,actor]);
   if(old.rows[0])return old.rows[0].id;
+  if(data.productId){
+   const check=await c.query("SELECT id FROM products WHERE id=$1",[data.productId]);
+   if(!check.rowCount)throw new BusinessError("Produk tidak ditemukan.");
+  }
+  if(data.deliveryId&&data.productId){
+   const pair=await c.query(`SELECT 1 FROM delivery_note_items di JOIN customer_order_items ci ON ci.id=di.order_item_id
+     WHERE di.delivery_id=$1 AND ci.product_id=$2`,[data.deliveryId,data.productId]);
+   if(!pair.rowCount)throw new BusinessError("Produk tidak termasuk dalam nota tersebut.");
+  }
   if(data.deliveryId){
    const matched=await c.query("SELECT 1 FROM delivery_notes d JOIN customer_orders o ON o.id=d.order_id WHERE d.id=$1 AND o.outlet_id=$2",[data.deliveryId,data.outletId]);
    if(!matched.rowCount)throw new BusinessError("Nota tidak sesuai dengan outlet.");
   }
   const r=await c.query<{id:string}>(
-   "INSERT INTO outlet_complaints(request_key,outlet_id,delivery_id,category,description,opened_by) VALUES($1,$2,$3,$4,$5,$6) RETURNING id",
-   [data.requestKey,data.outletId,data.deliveryId||null,data.category,data.description.trim().slice(0,1000),actor]);
+   "INSERT INTO outlet_complaints(request_key,outlet_id,delivery_id,product_id,category,description,opened_by) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id",
+   [data.requestKey,data.outletId,data.deliveryId||null,data.productId||null,data.category,data.description.trim().slice(0,1000),actor]);
   await c.query("INSERT INTO activity_logs(actor_id,action,entity,entity_id) VALUES($1,'complaint.create','complaint',$2)",[actor,r.rows[0].id]);
   return r.rows[0].id;
  });

@@ -16,7 +16,7 @@ export async function submitReturn(f:FormData){
 export async function submitComplaint(f:FormData){
  const actor=await requireActor(["owner","admin","marketing"]);
  await safeWrite("/outlet-returns",()=>reportComplaint({requestKey:s(f,"requestKey"),outletId:s(f,"outletId"),
- deliveryId:s(f,"deliveryId"),category:s(f,"category"),description:s(f,"description")},actor.id));
+ deliveryId:s(f,"deliveryId"),productId:s(f,"productId"),category:s(f,"category"),description:s(f,"description")},actor.id));
  revalidatePath("/outlet-returns");redirect("/outlet-returns?success=1");
 }
 export async function finishComplaint(f:FormData){
