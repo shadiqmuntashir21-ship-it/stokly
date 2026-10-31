@@ -4,12 +4,12 @@ import {listInvoices} from "@/lib/order-operations";
 import {PageHead,Panel,Empty,Notice,rupiah} from "@/components/ui";
 import {payAction} from "../order-actions";
 export const dynamic="force-dynamic";
-export default async function Invoices({searchParams}:{searchParams:Promise<{success?:string}>}){
+export default async function Invoices({searchParams}:{searchParams:Promise<{success?:string;error?:string}>}){
  await requireActor(["owner","admin"]);
  const [invoices,params]=await Promise.all([listInvoices(),searchParams]);
  const due=invoices.filter(x=>x.status==="issued"&&Number(x.gross)>Number(x.paid));
  const totalDue=invoices.reduce((sum,x)=>sum+Math.max(0,Number(x.gross)-Number(x.paid)),0);
- return <><PageHead eyebrow="PENJUALAN / TAGIHAN" title="Nota & Pembayaran" description="Nota pengiriman, pembayaran sebagian, lunas dan piutang outlet tersimpan dalam satu sumber data."/><Notice success={params.success}/>
+ return <><PageHead eyebrow="PENJUALAN / TAGIHAN" title="Nota & Pembayaran" description="Nota pengiriman, pembayaran sebagian, lunas dan piutang outlet tersimpan dalam satu sumber data."/><Notice success={params.success} error={params.error}/>
  <div className="metrics-grid"><section className="metric"><div className="metric-label">Total nota terbit</div><strong>{invoices.length}</strong></section><section className="metric"><div className="metric-label">Piutang dalam daftar</div><strong>{rupiah(totalDue)}</strong></section></div>
  <Panel title="Terima pembayaran" detail="Pembayaran tidak boleh melebihi sisa tagihan">
  <form action={payAction} className="form-grid">

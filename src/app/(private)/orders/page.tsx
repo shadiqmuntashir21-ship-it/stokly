@@ -8,11 +8,11 @@ import {dispatchAction} from "../order-actions";
 import {OrderComposer} from "@/components/order-composer";
 export const dynamic="force-dynamic";
 const today=()=>new Intl.DateTimeFormat("sv-SE",{timeZone:"Asia/Jakarta",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
-export default async function Orders({searchParams}:{searchParams:Promise<{success?:string}>}){
+export default async function Orders({searchParams}:{searchParams:Promise<{success?:string;error?:string}>}){
  const actor=await requireActor(["owner","admin","marketing"]);
  const [products,outletList,orders,lines,params]=await Promise.all([listProducts(),outlets(),listOrders(),listOrderLines(),searchParams]);
  const available=lines.filter(x=>x.quantity>x.shipped);
- return <><PageHead eyebrow="DISTRIBUSI / TRANSAKSI" title="Order Outlet" description="Satu order boleh berisi beberapa produk. Catat pengiriman dan nota berdasarkan jumlah aktual."/><Notice success={params.success}/>
+ return <><PageHead eyebrow="DISTRIBUSI / TRANSAKSI" title="Order Outlet" description="Satu order boleh berisi beberapa produk. Catat pengiriman dan nota berdasarkan jumlah aktual."/><Notice success={params.success} error={params.error}/>
  <Panel title="Order Baru">{outletList.filter(o=>o.active).length===0&&<p className="form-hint">Tambahkan outlet terlebih dahulu melalui menu Outlet.</p>}
  <OrderComposer products={products} outlets={outletList} requestKey={randomUUID()}/></Panel>
  {actor.role!=="marketing"&&<Panel title="Pengiriman & Nota Keluar" detail={available.length+" item order menunggu pengiriman"}>

@@ -6,10 +6,10 @@ import {PageHead,Panel,Notice,Empty,rupiah} from "@/components/ui";
 import {addExpenseAction} from "./actions";
 export const dynamic="force-dynamic";
 const today=()=>new Intl.DateTimeFormat("sv-SE",{timeZone:"Asia/Jakarta",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
-export default async function Expenses({searchParams}:{searchParams:Promise<{success?:string}>}){
+export default async function Expenses({searchParams}:{searchParams:Promise<{success?:string;error?:string}>}){
  await requireOwner();
  const [cats,entries,snapshot,outletList,params]=await Promise.all([listExpenseCategories(),listExpenses(),financeSnapshot(),outlets(),searchParams]);
- return <><PageHead eyebrow="OWNER / KEUANGAN" title="Biaya & Rekap Keuangan" description="Catat manpower, BBM, gaji dan biaya lainnya dengan klasifikasi yang jelas."/><Notice success={params.success}/>
+ return <><PageHead eyebrow="OWNER / KEUANGAN" title="Biaya & Rekap Keuangan" description="Catat manpower, BBM, gaji dan biaya lainnya dengan klasifikasi yang jelas."/><Notice success={params.success} error={params.error}/>
  <div className="metrics-grid">
   <section className="metric"><div className="metric-label">Tagihan pengiriman V2</div><strong>{rupiah(snapshot.gross)}</strong></section>
   <section className="metric"><div className="metric-label">Pembayaran diterima V2</div><strong>{rupiah(snapshot.paid)}</strong></section>

@@ -6,11 +6,11 @@ import {PageHead,Panel,Notice,Empty} from "@/components/ui";
 import {ProductionComposer} from "@/components/production-composer";
 export const dynamic="force-dynamic";
 const today=()=>new Intl.DateTimeFormat("sv-SE",{timeZone:"Asia/Jakarta",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
-export default async function Production({searchParams}:{searchParams:Promise<{success?:string}>}){
+export default async function Production({searchParams}:{searchParams:Promise<{success?:string;error?:string}>}){
  await requireActor(["owner","admin"]);
  const [batches,products,runs,params]=await Promise.all([listCoconutReceipts(),listProducts(),listProduction(),searchParams]);
  const available=batches.filter(b=>b.accepted_qty-b.consumed_qty>0);
- return <><PageHead eyebrow="PRODUKSI / HARIAN" title="Pengupasan & Hasil Produksi" description="Bahan baku lolos QC dipakai untuk produksi, lalu hasil produk jadi masuk stok otomatis."/><Notice success={params.success}/>
+ return <><PageHead eyebrow="PRODUKSI / HARIAN" title="Pengupasan & Hasil Produksi" description="Bahan baku lolos QC dipakai untuk produksi, lalu hasil produk jadi masuk stok otomatis."/><Notice success={params.success} error={params.error}/>
  <Panel title="Catat produksi">
   <ProductionComposer batches={available} products={products} requestKey={randomUUID()} date={today()}/>
  </Panel>

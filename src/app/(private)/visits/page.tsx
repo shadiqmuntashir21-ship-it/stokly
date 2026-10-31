@@ -6,11 +6,11 @@ import {PageHead,Panel,Empty,Notice} from "@/components/ui";
 import {visitAction} from "../coconut-actions";
 export const dynamic="force-dynamic";
 const today=()=>new Intl.DateTimeFormat("sv-SE",{timeZone:"Asia/Jakarta",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
-export default async function Visits({searchParams}:{searchParams:Promise<{success?:string}>}){
+export default async function Visits({searchParams}:{searchParams:Promise<{success?:string;error?:string}>}){
  await requireActor(["owner","admin","marketing"]);
  const [outletList,visits,params]=await Promise.all([outlets(),listVisits(),searchParams]);
  const active=outletList.filter(x=>x.active);
- return <><PageHead eyebrow="MARKETING / OUTLET" title="Kunjungan Outlet" description="Catat kunjungan, peluang order, komplain dan jadwal tindak lanjut."/><Notice success={params.success}/>
+ return <><PageHead eyebrow="MARKETING / OUTLET" title="Kunjungan Outlet" description="Catat kunjungan, peluang order, komplain dan jadwal tindak lanjut."/><Notice success={params.success} error={params.error}/>
  <Panel title="Catat kunjungan"><form action={visitAction} className="form-grid">
   <input name="requestKey" type="hidden" value={randomUUID()}/>
   <label>Outlet<select name="outletId" defaultValue="" required><option value="" disabled>Pilih outlet</option>{active.map(o=><option key={o.id} value={o.id}>{o.name}</option>)}</select></label>
