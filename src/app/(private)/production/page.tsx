@@ -14,5 +14,5 @@ export default async function Production({searchParams}:{searchParams:Promise<{s
  <Panel title="Catat produksi">
   <ProductionComposer batches={available} products={products} requestKey={randomUUID()} date={today()}/>
  </Panel>
- <Panel title="Riwayat produksi">{runs.length===0?<Empty label="produksi"/>:<div className="table-wrap"><table><thead><tr><th>Tanggal</th><th>Supplier bahan</th><th>Bahan terpakai</th><th>Dikupas</th><th>Produk jadi</th><th>Hasil</th></tr></thead><tbody>{runs.map(r=><tr key={r.id}><td>{r.production_date}</td><td>{r.supplier}</td><td>{r.coconut_used}</td><td>{r.peeled_qty}</td><td>{r.product}</td><td>{r.produced_qty}</td></tr>)}</tbody></table></div>}</Panel></>;
+ <Panel title="Riwayat produksi">{runs.length===0?<Empty label="produksi"/>:<div className="table-wrap"><table><thead><tr><th>Tanggal</th><th>Supplier bahan</th><th>Bahan terpakai</th><th>Dikupas</th><th>Produk jadi</th><th>Hasil</th></tr></thead><tbody>{runs.map(r=><tr key={r.id+"-"+r.product}><td>{r.production_date}</td><td>{r.supplier}</td><td>{r.coconut_used}</td><td>{r.peeled_qty}</td><td>{r.product}</td><td>{r.produced_qty}</td></tr>)}</tbody></table></div>}</Panel></>;
 }
