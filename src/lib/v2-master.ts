@@ -6,8 +6,8 @@ export async function suppliers(){
    "SELECT id::text,name,phone,address,notes,active FROM suppliers ORDER BY active DESC,name LIMIT 200");
 }
 export async function outlets(){
- return query<{id:string;name:string;phone:string;pic_name:string;address:string;active:boolean}>(
-   "SELECT id::text,name,phone,pic_name,address,active FROM outlets ORDER BY active DESC,name LIMIT 200");
+ return query<{id:string;name:string;phone:string;pic_name:string;address:string;latitude:string|null;longitude:string|null;active:boolean}>(
+   "SELECT id::text,name,phone,pic_name,address,latitude::text,longitude::text,active FROM outlets ORDER BY active DESC,name LIMIT 200");
 }
 export async function grades(){
  return query<{id:string;code:string;name:string}>("SELECT id::text,code,name FROM coconut_grades WHERE active=true ORDER BY name");
@@ -87,13 +87,17 @@ export async function archiveSupplier(id:string,actor:string){
   await c.query("INSERT INTO activity_logs(actor_id,action,entity,entity_id) VALUES($1,'supplier.archive','supplier',$2)",[actor,id]);
  });
 }
-export async function saveOutlet(input:{id?:string;name:string;phone:string;pic:string;address:string},actor:string){
+export async function saveOutlet(input:{id?:string;name:string;phone:string;pic:string;address:string;lat:number|null;lng:number|null},actor:string){
  if(!input.name.trim())throw new BusinessError("Nama outlet wajib diisi.");
- const values=[clean(input.name,180),clean(input.phone,40),clean(input.pic,120),clean(input.address,1000)];
+ if((input.lat===null)!==(input.lng===null)||
+ (input.lat!==null&&(!Number.isFinite(input.lat)||input.lat< -90||input.lat>90))||
+ (input.lng!==null&&(!Number.isFinite(input.lng)||input.lng< -180||input.lng>180)))
+ throw new BusinessError("Koordinat lokasi harus lengkap dan valid.");
+ const values=[clean(input.name,180),clean(input.phone,40),clean(input.pic,120),clean(input.address,1000),input.lat,input.lng];
  await transaction(async c=>{
   const r=input.id
-   ?await c.query<{id:string}>("UPDATE outlets SET name=$2,phone=$3,pic_name=$4,address=$5,updated_at=now() WHERE id=$1 AND active=true RETURNING id",[input.id,...values])
-   :await c.query<{id:string}>("INSERT INTO outlets(name,phone,pic_name,address) VALUES($1,$2,$3,$4) RETURNING id",values);
+   ?await c.query<{id:string}>("UPDATE outlets SET name=$2,phone=$3,pic_name=$4,address=$5,latitude=$6,longitude=$7,updated_at=now() WHERE id=$1 AND active=true RETURNING id",[input.id,...values])
+   :await c.query<{id:string}>("INSERT INTO outlets(name,phone,pic_name,address,latitude,longitude) VALUES($1,$2,$3,$4,$5,$6) RETURNING id",values);
   if(!r.rowCount)throw new BusinessError("Outlet tidak tersedia.");
   await c.query("INSERT INTO activity_logs(actor_id,action,entity,entity_id) VALUES($1,$2,'outlet',$3)",[actor,input.id?"outlet.edit":"outlet.create",r.rows[0].id]);
  });
