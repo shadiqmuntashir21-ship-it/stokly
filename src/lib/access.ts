@@ -2,7 +2,7 @@ import { headers, cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { query } from "@/lib/db";
-import { currentDevice, ROOM_COOKIE } from "@/lib/trusted-devices";
+import { ROOM_COOKIE } from "@/lib/trusted-devices";
 
 export type Role = "owner" | "admin" | "marketing";
 export type Actor = { id:string; name:string; email:string; role:Role };
@@ -27,8 +27,6 @@ export async function requireActor(allowed?:Role[]): Promise<Actor> {
     }
   }
 
-  const device=await currentDevice();
-  if(!device) redirect("/rooms?device=required");
   const room=(await cookies()).get(ROOM_COOKIE)?.value;
   if(room!=="admin" && room!=="marketing") redirect("/rooms");
   if(allowed && !allowed.includes(room)) redirect("/rooms?denied=1");

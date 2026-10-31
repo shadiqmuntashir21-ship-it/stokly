@@ -2,13 +2,11 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { currentDevice, ROOM_COOKIE } from "@/lib/trusted-devices";
+import { ROOM_COOKIE } from "@/lib/trusted-devices";
 
 export async function enterRoom(form:FormData){
  const room=String(form.get("room")||"");
  if(room!=="admin" && room!=="marketing") throw new Error("Room tidak valid.");
- const device=await currentDevice();
- if(!device)redirect("/rooms?device=required");
  const jar=await cookies();
  jar.set(ROOM_COOKIE,room,{secure:process.env.NODE_ENV==="production",httpOnly:true,sameSite:"lax",path:"/",maxAge:60*60*24*30});
  const session=await auth.api.getSession({headers:await headers()});

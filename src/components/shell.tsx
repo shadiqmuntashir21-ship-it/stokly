@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Package, PackagePlus, ShoppingCart, RotateCcw, ChartColumn, LogOut, Menu, X, KeyRound, ShieldCheck, LayoutGrid, Truck, Sprout, ClipboardCheck, Factory, CalendarDays, ClipboardList, FileText, WalletCards, MapPinned, Calculator } from "lucide-react";
+import { LayoutDashboard, Package, PackagePlus, ShoppingCart, RotateCcw, ChartColumn, LogOut, Menu, X, KeyRound, LayoutGrid, Truck, Sprout, ClipboardCheck, Factory, CalendarDays, ClipboardList, FileText, WalletCards, MapPinned, Calculator } from "lucide-react";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import type { Actor } from "@/lib/access";
@@ -26,7 +26,6 @@ const links = [
   {href:"/sales",label:"Penjualan (lama)",icon:ShoppingCart,roles:["owner","admin","marketing"]},
   {href:"/returns",label:"Retur",icon:RotateCcw,roles:["owner","admin"]},
   {href:"/reports",label:"Laporan",icon:ChartColumn,roles:["owner","admin"]},
-  {href:"/devices",label:"Perangkat",icon:ShieldCheck,roles:["owner"]},
   {href:"/settings/security",label:"Ganti PIN Owner",icon:KeyRound,roles:["owner"]},
   {href:"/rooms",label:"Pilih Room",icon:LayoutGrid,roles:["owner","admin","marketing"]}
 ];
