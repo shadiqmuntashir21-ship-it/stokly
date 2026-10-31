@@ -85,9 +85,10 @@ export async function dispatch(data:{requestKey:string;orderItemId:string;quanti
  });
 }
 export async function listInvoices(){
- return query<{id:string;document_number:string;outlet:string;delivered_on:string;gross:string;paid:string;status:string}>(
+ return query<{id:string;document_number:string;outlet:string;delivered_on:string;gross:string;paid:string;credit:string;status:string}>(
  `SELECT inv.id::text,d.document_number,t.name outlet,d.delivered_on::text,inv.gross::text,
- COALESCE((SELECT SUM(p.amount) FROM delivery_payments p WHERE p.invoice_id=inv.id),0)::text paid,inv.status
+ COALESCE((SELECT SUM(p.amount) FROM delivery_payments p WHERE p.invoice_id=inv.id),0)::text paid,
+ COALESCE((SELECT SUM(r.credit_amount) FROM delivery_returns r WHERE r.delivery_id=d.id),0)::text credit,inv.status
  FROM delivery_invoices inv JOIN delivery_notes d ON d.id=inv.delivery_id JOIN customer_orders o ON o.id=d.order_id
  JOIN outlets t ON t.id=o.outlet_id ORDER BY d.created_at DESC LIMIT 80`);
 }
@@ -100,8 +101,11 @@ export async function payInvoice(data:{requestKey:string;invoiceId:string;amount
    if(prior.rows[0])return prior.rows[0].id;
    const inv=await c.query<{gross:string;status:string}>("SELECT gross::text,status FROM delivery_invoices WHERE id=$1 FOR UPDATE",[data.invoiceId]);
    if(!inv.rows[0]||inv.rows[0].status!=='issued')throw new BusinessError("Tagihan tidak tersedia.");
-   const paid=await c.query<{total:string}>("SELECT COALESCE(SUM(amount),0)::text total FROM delivery_payments WHERE invoice_id=$1",[data.invoiceId]);
-   const remaining=Math.round(Number(inv.rows[0].gross)*100)-Math.round(Number(paid.rows[0].total)*100);
+   const totals=await c.query<{paid:string;credits:string}>(
+   `SELECT (SELECT COALESCE(SUM(amount),0)::text FROM delivery_payments WHERE invoice_id=$1) paid,
+    (SELECT COALESCE(SUM(r.credit_amount),0)::text FROM delivery_returns r JOIN delivery_notes d ON d.id=r.delivery_id JOIN delivery_invoices i ON i.delivery_id=d.id WHERE i.id=$1) credits`,
+    [data.invoiceId]);
+   const remaining=Math.round(Number(inv.rows[0].gross)*100)-Math.round(Number(totals.rows[0].credits)*100)-Math.round(Number(totals.rows[0].paid)*100);
    const amountCents=Math.round(data.amount*100);
    if(amountCents<=0||amountCents>remaining)throw new BusinessError("Pembayaran melebihi sisa tagihan.");
    const r=await c.query<{id:string}>(
