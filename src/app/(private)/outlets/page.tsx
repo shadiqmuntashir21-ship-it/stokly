@@ -3,10 +3,10 @@ import {outlets} from "@/lib/v2-master";
 import { PageHead,Panel,Notice,Empty } from "@/components/ui";
 import {outletSave,outletArchive} from "../v2-actions";
 export const dynamic="force-dynamic";
-export default async function Outlets({searchParams}:{searchParams:Promise<{success?:string}>}){
+export default async function Outlets({searchParams}:{searchParams:Promise<{success?:string;error?:string}>}){
  const actor=await requireActor(["owner","admin","marketing"]);
  const [list,p]=await Promise.all([outlets(),searchParams]);
- return <><PageHead eyebrow="DISTRIBUSI / MASTER DATA" title="Outlet & Pelanggan" description="Kelola nama outlet, nomor kontak dan alamat pengiriman."/><Notice success={p.success}/>
+ return <><PageHead eyebrow="DISTRIBUSI / MASTER DATA" title="Outlet & Pelanggan" description="Kelola nama outlet, nomor kontak dan alamat pengiriman."/><Notice success={p.success} error={p.error}/>
  <Panel title="Tambah Outlet"><form action={outletSave} className="form-grid">
  <label>Nama outlet<input name="name" required maxLength={180}/></label>
  <label>Nomor WhatsApp<input name="phone" type="tel" maxLength={40}/></label>

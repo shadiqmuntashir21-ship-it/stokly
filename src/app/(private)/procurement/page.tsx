@@ -5,13 +5,13 @@ import { listGrades, listSupplierPrices, listCoconutReceipts } from "@/lib/cocon
 import { PageHead, Panel, Empty, Notice, rupiah } from "@/components/ui";
 import { addGradeAction,addSupplierPriceAction,receiveAction } from "../coconut-actions";
 export const dynamic="force-dynamic";
-export default async function Procurement({searchParams}:{searchParams:Promise<{success?:string}>}){
+export default async function Procurement({searchParams}:{searchParams:Promise<{success?:string;error?:string}>}){
  await requireActor(["owner","admin"]);
  const [supplierList,grades,prices,receipts,params]=await Promise.all([suppliers(),listGrades(),listSupplierPrices(),listCoconutReceipts(),searchParams]);
  const activeSuppliers=supplierList.filter(s=>s.active);
  const ready=activeSuppliers.length>0&&grades.length>0;
  return <><PageHead eyebrow="PENGADAAN / BAHAN BAKU" title="Pembelian & Kelapa Masuk"
- description="Harga supplier, grade ketebalan, dan batch kelapa mentah yang diterima."/><Notice success={params.success}/>
+ description="Harga supplier, grade ketebalan, dan batch kelapa mentah yang diterima."/><Notice success={params.success} error={params.error}/>
  <Panel title="Kategori ketebalan kelapa" detail="Isi sesuai standar QC AFI Ara"><form action={addGradeAction} className="form-grid">
   <label>Kode grade<input name="code" required minLength={2} maxLength={40} placeholder="GRADE-A"/></label>
   <label>Nama grade<input name="name" required maxLength={100} placeholder="Kelapa tebal"/></label>

@@ -3,9 +3,9 @@ import { suppliers } from "@/lib/v2-master";
 import { PageHead,Panel,Notice,Empty } from "@/components/ui";
 import {supplierSave,supplierArchive} from "../v2-actions";
 export const dynamic="force-dynamic";
-export default async function Suppliers({searchParams}:{searchParams:Promise<{success?:string}>}){
+export default async function Suppliers({searchParams}:{searchParams:Promise<{success?:string;error?:string}>}){
  await requireActor(["owner","admin"]); const [list,p]=await Promise.all([suppliers(),searchParams]);
- return <><PageHead eyebrow="PENGADAAN / MASTER DATA" title="Supplier & Petani" description="Kontak petani, alamat, serta data dasar pemasok kelapa."/><Notice success={p.success}/>
+ return <><PageHead eyebrow="PENGADAAN / MASTER DATA" title="Supplier & Petani" description="Kontak petani, alamat, serta data dasar pemasok kelapa."/><Notice success={p.success} error={p.error}/>
  <Panel title="Tambah Supplier"><form action={supplierSave} className="form-grid">
  <label>Nama petani/supplier<input name="name" required maxLength={160}/></label>
  <label>Nomor WhatsApp<input name="phone" type="tel" maxLength={40}/></label>

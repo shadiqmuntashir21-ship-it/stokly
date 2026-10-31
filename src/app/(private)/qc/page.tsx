@@ -4,11 +4,11 @@ import {listCoconutReceipts} from "@/lib/coconut-operations";
 import { PageHead,Panel,Notice,Empty } from "@/components/ui";
 import {qcAction} from "../coconut-actions";
 export const dynamic="force-dynamic";
-export default async function QC({searchParams}:{searchParams:Promise<{success?:string}>}){
+export default async function QC({searchParams}:{searchParams:Promise<{success?:string;error?:string}>}){
  await requireActor(["owner","admin"]);
  const [batches,params]=await Promise.all([listCoconutReceipts(),searchParams]);
  const open=batches.filter(b=>b.quantity-b.accepted_qty-b.rejected_qty>0);
- return <><PageHead eyebrow="QUALITY CONTROL / BAHAN BAKU" title="QC & Kelapa Afkir" description="Periksa setiap batch: jumlah lolos dan afkir harus sesuai jumlah kelapa yang diperiksa."/><Notice success={params.success}/>
+ return <><PageHead eyebrow="QUALITY CONTROL / BAHAN BAKU" title="QC & Kelapa Afkir" description="Periksa setiap batch: jumlah lolos dan afkir harus sesuai jumlah kelapa yang diperiksa."/><Notice success={params.success} error={params.error}/>
  <Panel title="Catat hasil QC" detail={open.length+" batch belum selesai"}>
  <form action={qcAction} className="form-grid">
  <input type="hidden" name="requestKey" value={randomUUID()}/>

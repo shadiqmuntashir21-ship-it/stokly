@@ -4,7 +4,7 @@ import {query} from "@/lib/db";
 import { Notice,PageHead,Panel,rupiah,Empty } from "@/components/ui";
 import {productSave,productPrice,productStock,productArchive} from "../v2-actions";
 export const dynamic="force-dynamic";
-export default async function Products({searchParams}:{searchParams:Promise<{success?:string}>}){
+export default async function Products({searchParams}:{searchParams:Promise<{success?:string;error?:string}>}){
  const actor=await requireActor();
  const [products,params,history]=await Promise.all([
   listProducts(),searchParams,
@@ -12,7 +12,7 @@ export default async function Products({searchParams}:{searchParams:Promise<{suc
   "SELECT p.name,h.price::text,h.reason,h.created_at FROM product_price_history h JOIN products p ON p.id=h.product_id WHERE h.outlet_id IS NULL ORDER BY h.created_at DESC LIMIT 15")
  ]);
  const writable=actor.role!=="marketing";
- return <><PageHead eyebrow="MASTER DATA / INVENTORY" title="Produk & Persediaan" description="Ubah produk, harga, stok dan riwayatnya langsung dari STOKLY."/><Notice success={params.success}/>
+ return <><PageHead eyebrow="MASTER DATA / INVENTORY" title="Produk & Persediaan" description="Ubah produk, harga, stok dan riwayatnya langsung dari STOKLY."/><Notice success={params.success} error={params.error}/>
  {writable&&<Panel title="Tambah produk baru"><form action={productSave} className="form-grid">
   <label>Kode SKU<input name="sku" maxLength={60} required placeholder="PRD-001"/></label>
   <label>Nama produk<input name="name" maxLength={160} required placeholder="Kelapa serut"/></label>
