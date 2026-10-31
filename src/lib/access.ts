@@ -45,9 +45,7 @@ export async function requireActor(allowed?:Role[]):Promise<Actor>{
 }
 
 export async function requireOwner():Promise<Actor>{
- const session=await auth.api.getSession({headers:await headers()});
- if(!session)redirect("/login");
- const rows=await query<{role:Role}>("SELECT role FROM user_roles WHERE user_id=$1 LIMIT 1",[session.user.id]);
- if(rows[0]?.role!=="owner")redirect("/rooms?denied=1");
- return {id:session.user.id,name:session.user.name,email:session.user.email,role:"owner"};
+ const actor=await resolveActor();
+ if(actor.role!=="owner")redirect("/login");
+ return actor;
 }
