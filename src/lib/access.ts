@@ -1,7 +1,6 @@
 import { headers, cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
-import { auth } from "@/lib/auth";
 import { query } from "@/lib/db";
 import { ROOM_COOKIE } from "@/lib/trusted-devices";
 
@@ -26,7 +25,8 @@ const resolveActor=cache(async ():Promise<Actor>=>{
 
  // Owner must always be authenticated by the server. Never trust a room cookie for Owner.
  if(hasAuthCookie || room!=="admin"&&room!=="marketing"){
-  const session=await auth.api.getSession({headers:await headers()});
+  const [{auth},requestHeaders]=await Promise.all([import("@/lib/auth"),headers()]);
+  const session=await auth.api.getSession({headers:requestHeaders});
   if(session){
    const roles=await query<{role:Role}>("SELECT role FROM user_roles WHERE user_id=$1 LIMIT 1",[session.user.id]);
    if(roles[0]?.role==="owner"){
