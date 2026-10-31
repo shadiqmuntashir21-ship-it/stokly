@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Package, PackagePlus, ShoppingCart, RotateCcw, ChartColumn, LogOut, Menu, X, KeyRound, ShieldCheck, LayoutGrid } from "lucide-react";
+import { LayoutDashboard, Package, PackagePlus, ShoppingCart, RotateCcw, ChartColumn, LogOut, Menu, X, KeyRound, ShieldCheck, LayoutGrid, Truck, Sprout } from "lucide-react";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import type { Actor } from "@/lib/access";
@@ -9,6 +9,8 @@ import type { Actor } from "@/lib/access";
 const links = [
   {href:"/dashboard",label:"Dashboard",icon:LayoutDashboard,roles:["owner","admin","marketing"]},
   {href:"/products",label:"Produk & Stok",icon:Package,roles:["owner","admin","marketing"]},
+  {href:"/suppliers",label:"Supplier",icon:Sprout,roles:["owner","admin"]},
+  {href:"/outlets",label:"Outlet",icon:Truck,roles:["owner","admin","marketing"]},
   {href:"/receipts",label:"Barang Masuk",icon:PackagePlus,roles:["owner","admin"]},
   {href:"/issues",label:"Barang Keluar",icon:PackagePlus,roles:["owner","admin"]},
   {href:"/sales",label:"Penjualan",icon:ShoppingCart,roles:["owner","admin","marketing"]},

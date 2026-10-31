@@ -20,3 +20,24 @@
 .room-hint{margin-top:20px;border-radius:11px;background:#edf5f0;padding:17px;color:#325e50;line-height:1.7}
 .room-hint a{color:#145e48;text-decoration:underline}
 @media(max-width:760px){.rooms-card{padding:29px 21px}.rooms-card h1{font-size:25px}.room-choice{min-height:82px;padding:14px}.room-icon{width:44px;height:44px}}
+
+/* STOKLY V2 mobile-friendly master data actions */
+.product-manage-list{display:grid;gap:0}
+.manage-item{padding:19px 23px;border-bottom:1px solid var(--line)}
+.manage-item:last-child{border-bottom:0}
+.manage-item-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.manage-item-head strong{font-size:15px}
+.manage-item-head p{margin:6px 0 0;line-height:1.5}
+.manage-values{display:flex;gap:20px;flex-wrap:wrap;color:var(--muted);font-size:13px}
+.manage-values b{color:var(--ink)}
+.edit-detail{margin-top:15px;border-top:1px solid var(--line);padding-top:12px}
+.edit-detail summary{color:#145447;font-weight:700;cursor:pointer;display:list-item;padding:7px 0}
+.edit-forms{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:12px}
+.mini-form{display:grid;align-content:start;gap:12px;border:1px solid var(--line);border-radius:12px;padding:18px}
+.mini-form h3{font-size:14px;margin:0 0 4px}
+.mini-form label{display:grid;gap:7px;font-size:12px;font-weight:700;color:#536963}
+.mini-form .primary-button{white-space:normal}
+.archive-form{display:flex;align-items:center;gap:13px;margin-top:15px;flex-wrap:wrap}
+.danger-button{border:1px solid #f2c9c3;color:#af463b;background:#fff5f4;border-radius:9px;padding:10px 14px;font-weight:700}
+@media(max-width:1060px){.edit-forms{grid-template-columns:1fr}}
+@media(max-width:760px){.manage-item{padding:16px}.manage-values{gap:12px}}
