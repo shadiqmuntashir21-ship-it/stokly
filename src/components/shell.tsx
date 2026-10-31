@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Package, PackagePlus, ShoppingCart, RotateCcw, ChartColumn, LogOut, Menu, X, KeyRound, ShieldCheck, LayoutGrid, Truck, Sprout } from "lucide-react";
+import { LayoutDashboard, Package, PackagePlus, ShoppingCart, RotateCcw, ChartColumn, LogOut, Menu, X, KeyRound, ShieldCheck, LayoutGrid, Truck, Sprout, ClipboardCheck, Factory, CalendarDays, ClipboardList } from "lucide-react";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import type { Actor } from "@/lib/access";
@@ -11,6 +11,10 @@ const links = [
   {href:"/products",label:"Produk & Stok",icon:Package,roles:["owner","admin","marketing"]},
   {href:"/suppliers",label:"Supplier",icon:Sprout,roles:["owner","admin"]},
   {href:"/outlets",label:"Outlet",icon:Truck,roles:["owner","admin","marketing"]},
+  {href:"/visits",label:"Kunjungan Outlet",icon:CalendarDays,roles:["owner","admin","marketing"]},
+  {href:"/procurement",label:"Pembelian Kelapa",icon:ClipboardList,roles:["owner","admin"]},
+  {href:"/qc",label:"QC & Afkir",icon:ClipboardCheck,roles:["owner","admin"]},
+  {href:"/production",label:"Pengupasan",icon:Factory,roles:["owner","admin"]},
   {href:"/receipts",label:"Barang Masuk",icon:PackagePlus,roles:["owner","admin"]},
   {href:"/issues",label:"Barang Keluar",icon:PackagePlus,roles:["owner","admin"]},
   {href:"/sales",label:"Penjualan",icon:ShoppingCart,roles:["owner","admin","marketing"]},

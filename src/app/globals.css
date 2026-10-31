@@ -41,3 +41,5 @@
 .danger-button{border:1px solid #f2c9c3;color:#af463b;background:#fff5f4;border-radius:9px;padding:10px 14px;font-weight:700}
 @media(max-width:1060px){.edit-forms{grid-template-columns:1fr}}
 @media(max-width:760px){.manage-item{padding:16px}.manage-values{gap:12px}}
+
+.form-hint{padding:0 24px 20px;margin:0;color:var(--muted);font-size:12px;line-height:1.6}
