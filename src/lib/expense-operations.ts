@@ -21,11 +21,21 @@ export async function addExpense(data:{requestKey:string;category:string;amount:
  [data.requestKey,data.category,Math.round(data.amount*100)/100,data.date,data.productionId||null,data.outletId||null,data.note.trim().slice(0,400),actor]);
 }
 export async function financeSnapshot(){
- const [invoice,purchases,costs]=await Promise.all([
-  query<{gross:string;paid:string}>(`SELECT COALESCE((SELECT SUM(gross) FROM delivery_invoices WHERE status='issued'),0)::text gross,
-  COALESCE((SELECT SUM(p.amount) FROM delivery_payments p JOIN delivery_invoices i ON i.id=p.invoice_id WHERE i.status='issued'),0)::text paid`),
+ const [invoice,purchases,costs,routes]=await Promise.all([
+  query<{gross:string;credits:string;paid:string}>(`SELECT
+    COALESCE((SELECT SUM(gross) FROM delivery_invoices WHERE status='issued'),0)::text gross,
+    COALESCE((SELECT SUM(r.credit_amount) FROM delivery_returns r JOIN delivery_notes d ON d.id=r.delivery_id JOIN delivery_invoices i ON i.delivery_id=d.id WHERE i.status='issued'),0)::text credits,
+    COALESCE((SELECT SUM(p.amount) FROM delivery_payments p JOIN delivery_invoices i ON i.id=p.invoice_id WHERE i.status='issued'),0)::text paid`),
   query<{total:string}>(`SELECT COALESCE(SUM(total_value),0)::text total FROM coconut_receipts`),
-  query<{cost_class:string;total:string}>(`SELECT c.cost_class,COALESCE(SUM(e.amount),0)::text total FROM expense_entries e JOIN expense_categories c ON c.code=e.category_code GROUP BY c.cost_class`)
+  query<{cost_class:string;total:string}>(`SELECT c.cost_class,COALESCE(SUM(e.amount),0)::text total FROM expense_entries e JOIN expense_categories c ON c.code=e.category_code GROUP BY c.cost_class`),
+  query<{total:string}>(`SELECT COALESCE(SUM(amount),0)::text total FROM delivery_route_costs`)
  ]);
- return {gross:Number(invoice[0]?.gross||0),paid:Number(invoice[0]?.paid||0),purchases:Number(purchases[0]?.total||0),costs:costs.map(c=>({className:c.cost_class,amount:Number(c.total)}))};
+ return {
+  gross:Number(invoice[0]?.gross||0),credits:Number(invoice[0]?.credits||0),
+  net:Number(invoice[0]?.gross||0)-Number(invoice[0]?.credits||0),
+  paid:Number(invoice[0]?.paid||0),
+  purchases:Number(purchases[0]?.total||0),
+  routeCosts:Number(routes[0]?.total||0),
+  costs:costs.map(c=>({className:c.cost_class,amount:Number(c.total)}))
+ };
 }
