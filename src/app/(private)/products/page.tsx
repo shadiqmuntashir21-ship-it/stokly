@@ -17,7 +17,7 @@ export default async function Products({searchParams}:{searchParams:Promise<{suc
   <label>Kode SKU<input name="sku" maxLength={60} required placeholder="PRD-001"/></label>
   <label>Nama produk<input name="name" maxLength={160} required placeholder="Kelapa serut"/></label>
   <label>Kategori<input name="category" defaultValue="Kelapa" required maxLength={90}/></label>
-  <label>Satuan<select name="unit" defaultValue="PCS">{["PCS","BUTIR","KG","LITER","CUP","PACK"].map(x=><option key={x} value={x}>{x}</option>)}</select></label>
+  <label>Satuan<select name="unit" defaultValue={p.unit}>{["PCS","BUTIR","KG","LITER","CUP","PACK"].map(x=><option key={x} value={x}>{x}</option>)}</select></label>
   <label>Minimum stok<input name="minStock" type="number" min="0" step="1" defaultValue="5" required/></label>
   <label className="wide">Keterangan<input name="description" maxLength={1000} placeholder="Spesifikasi produk / kemasan"/></label>
   <button className="primary-button" type="submit">Tambah Produk</button>
@@ -36,7 +36,7 @@ export default async function Products({searchParams}:{searchParams:Promise<{suc
      <label>Kategori<input name="category" defaultValue={p.category}/></label>
      <label>Satuan<select name="unit" defaultValue="PCS">{["PCS","BUTIR","KG","LITER","CUP","PACK"].map(x=><option key={x}>{x}</option>)}</select></label>
      <label>Stok minimum<input type="number" min="0" name="minStock" defaultValue={p.min_stock} required/></label>
-     <label>Deskripsi<input name="description" defaultValue="" maxLength={1000}/></label>
+     <label>Deskripsi<input name="description" defaultValue={p.description} maxLength={1000}/></label>
      <button className="primary-button">Simpan Perubahan</button>
     </form>
     <form action={productPrice} className="mini-form">
