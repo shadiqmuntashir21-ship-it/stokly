@@ -3,8 +3,8 @@ import { PwaRegister } from "@/components/pwa-register";
 import "./globals.css";
 export const metadata: Metadata = {
   title: {default:"STOKLY",template:"%s | STOKLY"},
-  description: "Retail management dan inventory yang sederhana dan terintegrasi.",
-  applicationName:"STOKLY",
+  description: "STOKLY — Operasional Kelapa Branding Indonesia. Manajemen pembelian, stok, order outlet, dan produksi.",
+  applicationName:"STOKLY • Kelapa Branding Indonesia",
   appleWebApp:{capable:true,title:"STOKLY",statusBarStyle:"default"},
   icons:{icon:"/icons/icon.svg",apple:"/icons/icon-192.png"}
 };

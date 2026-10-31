@@ -1,8 +1,8 @@
 import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
  return {
-  id:"/",name:"STOKLY — Retail Management",short_name:"STOKLY",
-  description:"Kelola stok, barang masuk, barang keluar, penjualan, dan retur.",
+  id:"/",name:"STOKLY — Kelapa Branding Indonesia",short_name:"STOKLY",
+  description:"Manajemen produksi, persediaan, supplier, outlet, dan order usaha kelapa.",
   start_url:"/rooms",scope:"/",display:"standalone",
   background_color:"#f6f8f7",theme_color:"#123e3a",lang:"id",
   icons:[

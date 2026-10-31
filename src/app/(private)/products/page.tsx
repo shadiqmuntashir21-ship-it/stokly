@@ -34,7 +34,7 @@ export default async function Products({searchParams}:{searchParams:Promise<{suc
      <label>SKU<input name="sku" defaultValue={p.sku} required/></label>
      <label>Nama<input name="name" defaultValue={p.name} required/></label>
      <label>Kategori<input name="category" defaultValue={p.category}/></label>
-     <label>Satuan<select name="unit" defaultValue="PCS">{["PCS","BUTIR","KG","LITER","CUP","PACK"].map(x=><option key={x}>{x}</option>)}</select></label>
+     <label>Satuan<select name="unit" defaultValue={p.unit}>{["PCS","BUTIR","KG","LITER","CUP","PACK"].map(x=><option key={x}>{x}</option>)}</select></label>
      <label>Stok minimum<input type="number" min="0" name="minStock" defaultValue={p.min_stock} required/></label>
      <label>Deskripsi<input name="description" defaultValue={p.description} maxLength={1000}/></label>
      <button className="primary-button">Simpan Perubahan</button>
