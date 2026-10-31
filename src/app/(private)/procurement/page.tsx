@@ -1,3 +1,4 @@
+import {SubmitButton} from "@/components/submit-button";
 import { randomUUID } from "node:crypto";
 import { requireActor } from "@/lib/access";
 import { suppliers } from "@/lib/v2-master";
@@ -18,7 +19,7 @@ export default async function Procurement({searchParams}:{searchParams:Promise<{
   <label>Minimum (mm, opsional)<input name="min" type="number" min="0" step=".01"/></label>
   <label>Maksimum (mm, opsional)<input name="max" type="number" min="0" step=".01"/></label>
   <label className="wide">Standar atau keterangan<input name="notes" maxLength={500}/></label>
-  <button className="primary-button">Tambah Grade</button>
+  <SubmitButton className="primary-button">Tambah Grade</SubmitButton>
  </form>
  {grades.length>0&&<div className="table-wrap"><table><thead><tr><th>Kode</th><th>Nama</th><th>Min (mm)</th><th>Maks (mm)</th></tr></thead>
  <tbody>{grades.map(g=><tr key={g.id}><td className="mono">{g.code}</td><td>{g.name}</td><td>{g.thickness_min_mm??"—"}</td><td>{g.thickness_max_mm??"—"}</td></tr>)}</tbody></table></div>}</Panel>
@@ -28,7 +29,7 @@ export default async function Procurement({searchParams}:{searchParams:Promise<{
   <label>Grade<select name="gradeId" required defaultValue=""><option value="" disabled>Pilih grade</option>{grades.map(g=><option key={g.id} value={g.id}>{g.name}</option>)}</select></label>
   <label>Harga per butir (Rp)<input name="price" type="number" min="0" step=".01" required/></label>
   <label className="wide">Catatan<input name="note" maxLength={400} placeholder="Harga kesepakatan terbaru"/></label>
-  <button className="primary-button" disabled={!ready}>Simpan Harga Supplier</button>
+  <SubmitButton className="primary-button" disabled={!ready}>Simpan Harga Supplier</SubmitButton>
  </form>
  {prices.length===0?<Empty label="riwayat harga supplier"/>:<div className="table-wrap"><table><thead><tr><th>Tanggal</th><th>Supplier</th><th>Grade</th><th>Harga / Butir</th></tr></thead><tbody>{prices.map(x=><tr key={x.id}><td>{new Date(x.effective_at).toLocaleDateString("id-ID")}</td><td>{x.supplier_name}</td><td>{x.grade_name}</td><td>{rupiah(x.unit_price)}</td></tr>)}</tbody></table></div>}</Panel>
  <Panel title="Terima kelapa mentah" detail="Satu penerimaan = satu batch">
@@ -39,7 +40,7 @@ export default async function Procurement({searchParams}:{searchParams:Promise<{
   <label>Kelapa diterima (butir)<input name="quantity" type="number" min="1" step="1" required/></label>
   <label>Harga aktual / butir (Rp)<input name="price" type="number" min="0" step=".01" required/></label>
   <label className="wide">Catatan penerimaan<input name="note" maxLength={400} placeholder="Nomor pembelian / pengiriman"/></label>
-  <button className="primary-button" disabled={!ready}>Simpan Kelapa Masuk</button>
+  <SubmitButton className="primary-button" disabled={!ready}>Simpan Kelapa Masuk</SubmitButton>
  </form>
  <p className="form-hint">Harga aktual disimpan pada saat penerimaan dan tidak berubah jika harga supplier diperbarui nanti.</p>
  </Panel>

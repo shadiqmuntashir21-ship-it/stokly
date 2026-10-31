@@ -1,4 +1,5 @@
 "use client";
+import {SubmitButton} from "@/components/submit-button";
 import {useState} from "react";
 import { createOrderAction } from "@/app/(private)/order-actions";
 
@@ -36,7 +37,7 @@ export function OrderComposer({products,outlets,requestKey}:{products:Product[];
    </div>)}
   </div>
   <div className="order-submit"><span><span className="small-muted">Total order (harga tersimpan saat konfirmasi)</span><strong>{formatter(total)}</strong></span>
-   <button className="primary-button" disabled={!valid}>Konfirmasi Order</button>
+   <SubmitButton className="primary-button" disabled={!valid}>Konfirmasi Order</SubmitButton>
   </div>
   <p className="form-hint">Order belum langsung mengurangi stok. Stok berkurang ketika barang dicatat terkirim. Pastikan harga produk sudah benar.</p>
  </form>;

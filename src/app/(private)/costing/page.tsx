@@ -1,3 +1,4 @@
+import {SubmitButton} from "@/components/submit-button";
 import {requireOwner} from "@/lib/access";
 import {listProductionCosts} from "@/lib/costing-operations";
 import type {CostLine} from "@/lib/costing-operations";
@@ -33,7 +34,7 @@ export default async function Costing({searchParams}:{searchParams:Promise<{succ
        <input name="pct" type="number" min=".01" max="100" step=".01" defaultValue={x.share_pct??(items.length===1?"100":"")} placeholder="Persentase biaya %" required/></label>
      {ready&&<p className="small-muted">Alokasi: {rupiah(total*Number(x.share_pct)/100)} · Estimasi biaya per {x.unit}: {rupiah(total*Number(x.share_pct)/100/x.produced_qty)}</p>}
     </div>)}
-    <button className="primary-button">Simpan Alokasi 100%</button>
+    <SubmitButton className="primary-button">Simpan Alokasi 100%</SubmitButton>
    </form>
   </section>;
  })}</div>}</Panel>

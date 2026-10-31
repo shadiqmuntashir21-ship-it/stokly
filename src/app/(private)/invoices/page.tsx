@@ -1,3 +1,4 @@
+import {SubmitButton} from "@/components/submit-button";
 import {randomUUID} from "node:crypto";
 import {requireActor} from "@/lib/access";
 import {listInvoices} from "@/lib/order-operations";
@@ -18,7 +19,7 @@ export default async function Invoices({searchParams}:{searchParams:Promise<{suc
   <label>Nominal bayar (Rp)<input name="amount" type="number" min=".01" step=".01" required/></label>
   <label>Metode<select name="method" defaultValue="transfer"><option value="transfer">Transfer</option><option value="cash">Tunai</option><option value="other">Lainnya</option></select></label>
   <label className="wide">Referensi pembayaran<input name="reference" maxLength={120} placeholder="Nomor transfer / bukti pembayaran"/></label>
-  <button className="primary-button" disabled={!due.length}>Simpan Pembayaran</button>
+  <SubmitButton className="primary-button" disabled={!due.length}>Simpan Pembayaran</SubmitButton>
  </form></Panel>
  <Panel title="Rekap Nota dan Piutang">{invoices.length===0?<Empty label="nota"/>:<div className="table-wrap"><table><thead><tr><th>No. Nota</th><th>Tanggal Kirim</th><th>Outlet</th><th>Bruto</th><th>Retur</th><th>Tagihan Bersih</th><th>Terbayar</th><th>Sisa Piutang</th><th>Status</th></tr></thead>
  <tbody>{invoices.map(i=><tr key={i.id}><td className="mono">{i.document_number}</td><td>{i.delivered_on}</td><td>{i.outlet}</td><td>{rupiah(i.gross)}</td><td>{rupiah(i.credit)}</td><td>{rupiah(Number(i.gross)-Number(i.credit))}</td><td>{rupiah(i.paid)}</td><td>{rupiah(Number(i.gross)-Number(i.paid))}</td><td><span className={Number(i.gross)-Number(i.credit)===Number(i.paid)?"status-success":"status-danger"}>{Number(i.gross)===Number(i.paid)?"Lunas":Number(i.paid)>0?"Sebagian":"Belum bayar"}</span></td></tr>)}</tbody></table></div>}</Panel>

@@ -1,3 +1,4 @@
+import {SubmitButton} from "@/components/submit-button";
 import { requireActor } from "@/lib/access";
 import { listProducts } from "@/lib/operations";
 import {query} from "@/lib/db";
@@ -20,7 +21,7 @@ export default async function Products({searchParams}:{searchParams:Promise<{suc
   <label>Satuan<select name="unit" defaultValue="PCS">{["PCS","BUTIR","KG","LITER","CUP","PACK"].map(x=><option key={x} value={x}>{x}</option>)}</select></label>
   <label>Minimum stok<input name="minStock" type="number" min="0" step="1" defaultValue="5" required/></label>
   <label className="wide">Keterangan<input name="description" maxLength={1000} placeholder="Spesifikasi produk / kemasan"/></label>
-  <button className="primary-button" type="submit">Tambah Produk</button>
+  <SubmitButton className="primary-button" type="submit">Tambah Produk</SubmitButton>
  </form></Panel>}
  <Panel title="Daftar Produk" detail={products.length+" produk aktif"}>
  {products.length===0?<Empty label="produk"/>:<div className="product-manage-list">
@@ -37,13 +38,13 @@ export default async function Products({searchParams}:{searchParams:Promise<{suc
      <label>Satuan<select name="unit" defaultValue={p.unit}>{["PCS","BUTIR","KG","LITER","CUP","PACK"].map(x=><option key={x}>{x}</option>)}</select></label>
      <label>Stok minimum<input type="number" min="0" name="minStock" defaultValue={p.min_stock} required/></label>
      <label>Deskripsi<input name="description" defaultValue={p.description} maxLength={1000}/></label>
-     <button className="primary-button">Simpan Perubahan</button>
+     <SubmitButton className="primary-button">Simpan Perubahan</SubmitButton>
     </form>
     <form action={productPrice} className="mini-form">
      <h3>Ganti harga jual</h3><input type="hidden" name="id" value={p.id}/>
      <label>Harga baru (Rp)<input type="number" min="0" step="1" name="price" defaultValue={p.price} required/></label>
      <label>Alasan perubahan<input name="reason" minLength={5} maxLength={400} required placeholder="Kenaikan harga bahan baku"/></label>
-     <button className="primary-button">Simpan Harga</button>
+     <SubmitButton className="primary-button">Simpan Harga</SubmitButton>
     </form>
     <form action={productStock} className="mini-form">
      <h3>Koreksi stok fisik</h3><input type="hidden" name="id" value={p.id}/>
@@ -51,7 +52,7 @@ export default async function Products({searchParams}:{searchParams:Promise<{suc
      <p className="small-muted">Stok saat membuka: {p.stock}. Jika berubah karena transaksi lain, koreksi akan ditolak.</p>
      <label>Stok aktual<input name="actual" type="number" min="0" step="1" defaultValue={p.stock} required/></label>
      <label>Alasan koreksi<input name="reason" minLength={5} maxLength={400} required placeholder="Hasil stock opname"/></label>
-     <button className="primary-button">Koreksi Stok</button>
+     <SubmitButton className="primary-button">Koreksi Stok</SubmitButton>
     </form>
    </div>
    <form action={productArchive} className="archive-form"><input type="hidden" name="id" value={p.id}/>

@@ -1,3 +1,4 @@
+import {SubmitButton} from "@/components/submit-button";
 import {randomUUID} from "node:crypto";
 import {requireActor} from "@/lib/access";
 import {listProducts} from "@/lib/operations";
@@ -24,7 +25,7 @@ export default async function Orders({searchParams}:{searchParams:Promise<{succe
   <label>Tanggal kirim<input type="date" name="deliveredOn" defaultValue={today()} required/></label>
   <label>Jumlah dikirim<input type="number" name="quantity" min="1" step="1" required/></label>
   <label className="wide">Catatan pengiriman<input name="note" maxLength={400} placeholder="Kurir, kendaraan, bukti pengiriman"/></label>
-  <button className="primary-button" disabled={!available.length}>Kirim & Terbitkan Nota</button>
+  <SubmitButton className="primary-button" disabled={!available.length}>Kirim & Terbitkan Nota</SubmitButton>
  </form><p className="form-hint">Satu pengiriman untuk satu baris produk. Pengiriman sebagian didukung; sistem membuat nomor nota dan tagihan secara otomatis.</p>
  </Panel>}
  <Panel title="Daftar Order" detail={orders.length+" order"}>{orders.length===0?<Empty label="order"/>:<div className="table-wrap"><table><thead><tr><th>Tanggal</th><th>Outlet</th><th>Status</th><th>Order (unit)</th><th>Terkirim (unit)</th><th>Nilai Order</th></tr></thead>

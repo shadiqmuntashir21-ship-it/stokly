@@ -1,3 +1,4 @@
+import {SubmitButton} from "@/components/submit-button";
 import {randomUUID} from "node:crypto";
 import {requireActor} from "@/lib/access";
 import {listCoconutReceipts} from "@/lib/coconut-operations";
@@ -17,7 +18,7 @@ export default async function QC({searchParams}:{searchParams:Promise<{success?:
  <label>Jumlah lolos QC<input name="passed" type="number" min="0" step="1" defaultValue="0" required/></label>
  <label>Jumlah afkir<input name="rejected" type="number" min="0" step="1" defaultValue="0" required/></label>
  <label className="wide">Alasan afkir (wajib jika afkir &gt; 0)<input name="reason" maxLength={400} placeholder="Busuk, pecah, tidak sesuai grade..."/></label>
- <button className="primary-button" disabled={!open.length}>Simpan Hasil QC</button>
+ <SubmitButton className="primary-button" disabled={!open.length}>Simpan Hasil QC</SubmitButton>
  </form><p className="form-hint">Bisa melakukan QC bertahap. Sisa yang belum diperiksa tetap tercatat terpisah.</p></Panel>
  <Panel title="Rekap batch & QC">{batches.length===0?<Empty label="batch kelapa"/>:<div className="table-wrap"><table><thead><tr><th>Supplier</th><th>Grade</th><th>Diterima</th><th>Lolos</th><th>Afkir</th><th>Belum QC</th><th>Siap produksi</th></tr></thead><tbody>{batches.map(b=><tr key={b.id}><td>{b.supplier}</td><td>{b.grade}</td><td>{b.quantity}</td><td>{b.accepted_qty}</td><td>{b.rejected_qty}</td><td>{b.quantity-b.accepted_qty-b.rejected_qty}</td><td>{b.accepted_qty-b.consumed_qty}</td></tr>)}</tbody></table></div>}</Panel></>;
 }

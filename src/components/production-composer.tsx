@@ -1,4 +1,5 @@
 "use client";
+import {SubmitButton} from "@/components/submit-button";
 import {useState} from "react";
 import {productionAction} from "@/app/(private)/coconut-actions";
 type Batch={batch_id:string;supplier:string;grade:string;accepted_qty:number;consumed_qty:number};
@@ -31,6 +32,6 @@ export function ProductionComposer({batches,products,requestKey,date}:{batches:B
     </div>)}
   </div>
   <div className="order-submit"><p className="small-muted">Bahan baku dikurangi sekali. Semua hasil produk ditambahkan dalam transaksi yang sama.</p>
-   <button className="primary-button" disabled={!valid||!products.length||!batches.length}>Simpan Produksi</button></div>
+   <SubmitButton className="primary-button" disabled={!valid||!products.length||!batches.length}>Simpan Produksi</SubmitButton></div>
  </form>;
 }

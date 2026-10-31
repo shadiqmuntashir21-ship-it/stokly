@@ -1,3 +1,4 @@
+import {SubmitButton} from "@/components/submit-button";
 import {randomUUID} from "node:crypto";
 import {requireOwner} from "@/lib/access";
 import {outlets} from "@/lib/v2-master";
@@ -30,7 +31,7 @@ export default async function Expenses({searchParams}:{searchParams:Promise<{suc
   <label>Outlet terkait (khusus distribusi)<select name="outletId" defaultValue=""><option value="">Tidak spesifik</option>{outletList.filter(x=>x.active).map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
   <label className="wide">Proses produksi terkait (khusus biaya produksi)<select name="productionId" defaultValue=""><option value="">Tidak dialokasikan ke proses</option>{productions.map(x=><option key={x.id} value={x.id}>{x.production_date} · {x.id.slice(0,8)}</option>)}</select></label>
   <label className="wide">Keterangan biaya<input name="note" minLength={5} maxLength={400} required placeholder="Contoh: BBM pengantaran area utara"/></label>
-  <button className="primary-button">Simpan Biaya</button>
+  <SubmitButton className="primary-button">Simpan Biaya</SubmitButton>
  </form><p className="form-hint">Biaya produksi yang terkait langsung ke batch bisa dipilih pada Proses Produksi, lalu dialokasikan melalui HPP Produksi. Pembelian kelapa sudah dicatat di Pengadaan, dan biaya perjalanan harus dicatat melalui Rute & Ongkir. Hindari input biaya yang sama dua kali.</p></Panel>
  <Panel title="Biaya berdasarkan jenis">{snapshot.costs.length===0?<Empty label="biaya"/>:<div className="table-wrap"><table><thead><tr><th>Jenis Biaya</th><th>Total</th></tr></thead><tbody>{snapshot.costs.map(c=><tr key={c.className}><td>{c.className}</td><td>{rupiah(c.amount)}</td></tr>)}</tbody></table></div>}</Panel>
  <Panel title="Riwayat biaya">{entries.length===0?<Empty label="pengeluaran"/>:<div className="table-wrap"><table><thead><tr><th>Tanggal</th><th>Kategori</th><th>Outlet</th><th>Nominal</th><th>Keterangan</th></tr></thead><tbody>{entries.map(x=><tr key={x.id}><td>{x.incurred_on}</td><td>{x.name}</td><td>{x.outlet||"—"}</td><td>{rupiah(x.amount)}</td><td>{x.note}</td></tr>)}</tbody></table></div>}</Panel>

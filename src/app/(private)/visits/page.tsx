@@ -1,3 +1,4 @@
+import {SubmitButton} from "@/components/submit-button";
 import {randomUUID} from "node:crypto";
 import {requireActor} from "@/lib/access";
 import {outlets} from "@/lib/v2-master";
@@ -21,7 +22,7 @@ export default async function Visits({searchParams}:{searchParams:Promise<{succe
   </select></label>
   <label>Tindak lanjut pada<input type="date" name="followUp"/></label>
   <label className="wide">Catatan<input name="note" maxLength={1000} placeholder="Hasil diskusi dengan outlet"/></label>
-  <button className="primary-button" disabled={!active.length}>Simpan Kunjungan</button>
+  <SubmitButton className="primary-button" disabled={!active.length}>Simpan Kunjungan</SubmitButton>
  </form></Panel>
  <Panel title="Riwayat kunjungan">{visits.length===0?<Empty label="kunjungan"/>:<div className="table-wrap"><table><thead><tr><th>Tanggal</th><th>Outlet</th><th>Petugas</th><th>Hasil</th><th>Tindak Lanjut</th><th>Catatan</th></tr></thead>
  <tbody>{visits.map(v=><tr key={v.id}><td>{v.visited_on}</td><td>{v.outlet}</td><td>{v.staff_name}</td><td>{v.outcome.replace("_"," ")}</td><td>{v.follow_up_on??"—"}</td><td>{v.note||"—"}</td></tr>)}</tbody></table></div>}</Panel></>;

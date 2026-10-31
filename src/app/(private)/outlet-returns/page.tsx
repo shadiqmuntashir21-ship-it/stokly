@@ -1,3 +1,4 @@
+import {SubmitButton} from "@/components/submit-button";
 import {randomUUID} from "node:crypto";
 import {requireActor} from "@/lib/access";
 import {outlets} from "@/lib/v2-master";
@@ -26,7 +27,7 @@ export default async function OutletReturns({searchParams}:{searchParams:Promise
   </select></label>
   <label>Kembalikan ke stok?<select name="restock" defaultValue="no"><option value="no">Tidak</option><option value="yes">Ya, hanya jika QC layak jual</option></select></label>
   <label className="wide">Alasan retur<input name="reason" required minLength={5} maxLength={400} placeholder="Produk rusak setelah pengiriman"/></label>
-  <button className="primary-button" disabled={!available.length}>Simpan Retur & Potongan Nota</button>
+  <SubmitButton className="primary-button" disabled={!available.length}>Simpan Retur & Potongan Nota</SubmitButton>
  </form><p className="form-hint">Nilai retur dihitung dari harga pada nota, bukan harga produk terbaru. Retur yang lebih besar dari sisa nilai tagihan tidak diizinkan hingga pengembalian dana ditangani.</p></Panel>}
  <Panel title="Buat komplain outlet"><form className="form-grid" action={submitComplaint}>
   <input name="requestKey" type="hidden" value={randomUUID()}/>
@@ -35,7 +36,7 @@ export default async function OutletReturns({searchParams}:{searchParams:Promise
   <label>Produk terkait (opsional)<select name="productId" defaultValue=""><option value="">Semua / belum diketahui</option>{products.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
   <label>Kategori<select name="category" defaultValue="quality"><option value="quality">Kualitas/QC</option><option value="quantity">Jumlah</option><option value="delivery">Pengiriman</option><option value="price">Harga</option><option value="other">Lainnya</option></select></label>
   <label className="wide">Keterangan<input name="description" minLength={5} maxLength={1000} required placeholder="Keluhan, bukti dan permintaan outlet"/></label>
-  <button className="primary-button">Catat Komplain</button>
+  <SubmitButton className="primary-button">Catat Komplain</SubmitButton>
  </form></Panel>
  <Panel title="Riwayat retur">{returned.length===0?<Empty label="retur outlet"/>:<div className="table-wrap"><table><thead><tr><th>Nota</th><th>Outlet</th><th>Produk</th><th>Jumlah</th><th>Nilai retur</th><th>QC</th><th>Stok kembali</th><th>Alasan</th></tr></thead>
  <tbody>{returned.map(x=><tr key={x.id}><td>{x.document_number}</td><td>{x.outlet}</td><td>{x.product}</td><td>{x.quantity}</td><td>{rupiah(x.credit_amount)}</td><td>{x.qc_result}</td><td>{x.restock?"Ya":"Tidak"}</td><td>{x.reason}</td></tr>)}</tbody></table></div>}</Panel>
@@ -46,7 +47,7 @@ export default async function OutletReturns({searchParams}:{searchParams:Promise
   {writable&&["open","investigating"].includes(c.status)&&<details className="edit-detail"><summary>Update komplain</summary><form action={finishComplaint} className="form-grid">
   <input type="hidden" name="id" value={c.id}/><label>Status<select name="status" defaultValue="investigating"><option value="investigating">Dalam pemeriksaan</option><option value="resolved">Selesai</option><option value="rejected">Ditolak</option></select></label>
   <label className="wide">Keputusan atau tindak lanjut<input name="resolution" required minLength={5} maxLength={1000}/></label>
-  <button className="primary-button">Simpan Keputusan</button></form></details>}
+  <SubmitButton className="primary-button">Simpan Keputusan</SubmitButton></form></details>}
  </section>)}</div>}</Panel>
  </>;
 }
