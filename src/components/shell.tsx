@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Package, PackagePlus, ShoppingCart, RotateCcw, ChartColumn, LogOut, Menu, X, KeyRound, ShieldCheck, LayoutGrid, Truck, Sprout, ClipboardCheck, Factory, CalendarDays, ClipboardList, FileText, WalletCards } from "lucide-react";
+import { LayoutDashboard, Package, PackagePlus, ShoppingCart, RotateCcw, ChartColumn, LogOut, Menu, X, KeyRound, ShieldCheck, LayoutGrid, Truck, Sprout, ClipboardCheck, Factory, CalendarDays, ClipboardList, FileText, WalletCards, MapPinned } from "lucide-react";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import type { Actor } from "@/lib/access";
@@ -20,6 +20,8 @@ const links = [
   {href:"/orders",label:"Order Outlet",icon:ShoppingCart,roles:["owner","admin","marketing"]},
   {href:"/invoices",label:"Nota & Pembayaran",icon:FileText,roles:["owner","admin"]},
   {href:"/expenses",label:"Buku Biaya",icon:WalletCards,roles:["owner"]},
+  {href:"/routes",label:"Rute & Ongkir",icon:MapPinned,roles:["owner","admin"]},
+  {href:"/outlet-returns",label:"Retur Outlet",icon:RotateCcw,roles:["owner","admin","marketing"]},
   {href:"/sales",label:"Penjualan (lama)",icon:ShoppingCart,roles:["owner","admin","marketing"]},
   {href:"/returns",label:"Retur",icon:RotateCcw,roles:["owner","admin"]},
   {href:"/reports",label:"Laporan",icon:ChartColumn,roles:["owner","admin"]},
