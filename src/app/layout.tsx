@@ -6,9 +6,9 @@ export const metadata: Metadata = {
   description: "STOKLY — Operasional Kelapa Branding Indonesia. Manajemen pembelian, stok, order outlet, dan produksi.",
   applicationName:"STOKLY • Kelapa Branding Indonesia",
   appleWebApp:{capable:true,title:"STOKLY",statusBarStyle:"default"},
-  icons:{icon:"/icons/icon.svg",apple:"/icons/icon-192.png"}
+  icons:{icon:"/icons/icon.svg",shortcut:"/icons/icon.svg",apple:"/icons/icon-192.png"}
 };
-export const viewport: Viewport = {width:"device-width",initialScale:1,themeColor:"#123e3a"};
+export const viewport: Viewport = {width:"device-width",initialScale:1,themeColor:"#163f2f"};
 export default function RootLayout({children}: Readonly<{children:React.ReactNode}>) {
  return <html lang="id"><body><PwaRegister/>{children}</body></html>;
 }
