@@ -1,4 +1,5 @@
-"use server";\nimport {safeWrite} from "@/lib/safe-action";
+"use server";
+import {safeWrite} from "@/lib/safe-action";
 import { requireActor } from "@/lib/access";
 import { createOrder,dispatch,payInvoice } from "@/lib/order-operations";
 import { revalidatePath } from "next/cache";
