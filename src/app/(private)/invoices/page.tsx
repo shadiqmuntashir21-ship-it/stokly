@@ -1,4 +1,5 @@
 import {randomUUID} from "node:crypto";
+import Link from "next/link";
 import {requireActor} from "@/lib/access";
 import {listInvoices} from "@/lib/order-operations";
 import {PageHead,Panel,Empty,Notice,rupiah} from "@/components/ui";
@@ -36,7 +37,7 @@ export default async function Invoices({searchParams}:{searchParams:Promise<{suc
  const final=Math.max(0,Number(i.gross)-Number(i.credit));
  const remaining=Math.max(0,final-Number(i.paid));
  const status=i.status==="cancelled"?"Batal":i.deliveries===0?"Belum dikirim":remaining===0?"Lunas":Number(i.paid)>0?"Sebagian":"Belum bayar";
- return <tr key={i.id}><td className="mono">{i.document_number||"Belum direkonsiliasi"}</td><td>{i.ordered_on}</td><td>{i.outlet}</td><td>{i.group_name}</td><td>{i.pcs}</td><td>{rupiah(i.gross)}</td><td>{rupiah(i.credit)}</td><td>{rupiah(final)}</td><td>{rupiah(i.paid)}</td><td>{rupiah(remaining)}</td><td>{status}</td><td>{i.paid_at||"—"}</td><td>{i.payment_method||"—"}</td><td>{i.physical_receipt_type||"—"} / {i.physical_receipt_status}</td></tr>;
+ return <tr key={i.id}><td className="mono"><Link href={"/receipts/"+i.id+"/print"}>{i.document_number||"Belum direkonsiliasi"}</Link></td><td>{i.ordered_on}</td><td>{i.outlet}</td><td>{i.group_name}</td><td>{i.pcs}</td><td>{rupiah(i.gross)}</td><td>{rupiah(i.credit)}</td><td>{rupiah(final)}</td><td>{rupiah(i.paid)}</td><td>{rupiah(remaining)}</td><td>{status}</td><td>{i.paid_at||"—"}</td><td>{i.payment_method||"—"}</td><td>{i.physical_receipt_type||"—"} / {i.physical_receipt_status}</td></tr>;
  })}</tbody></table></div>}
  </Panel>
  <p className="small-muted">Nomor lama dan transaksi kasir V1 tidak diganti otomatis. Penggabungan historis memerlukan rekonsiliasi agar tidak ada kwitansi ganda.</p>
