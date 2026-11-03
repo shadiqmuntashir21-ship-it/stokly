@@ -4,7 +4,7 @@ const uuid=(x:string)=>/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9
 const qty=(n:number)=>Number.isSafeInteger(n)&&n>0&&n<=100000000;
 export async function listReturnLines(){
  return query<{delivery_id:string;order_item_id:string;number:string;outlet:string;product:string;quantity:number;returned:number;price:string}>(
- `SELECT d.id::text delivery_id,li.order_item_id::text,d.document_number number,o.name outlet,p.name product,li.quantity,
+ `SELECT d.id::text delivery_id,li.order_item_id::text,COALESCE(co.document_number,d.document_number) number,o.name outlet,p.name product,li.quantity,
  COALESCE((SELECT SUM(r.quantity)::int FROM delivery_returns r WHERE r.delivery_id=d.id AND r.order_item_id=li.order_item_id),0)::int returned,
  li.unit_price::text price
  FROM delivery_notes d JOIN delivery_note_items li ON li.delivery_id=d.id
@@ -16,7 +16,7 @@ export async function listReturnLines(){
 }
 export async function listV2Returns(){
  return query<{id:string;document_number:string;outlet:string;product:string;quantity:number;credit_amount:string;restock:boolean;qc_result:string;reason:string;created_at:Date}>(
- `SELECT r.id::text,d.document_number,o.name outlet,p.name product,r.quantity,r.credit_amount::text,r.restock,r.qc_result,r.reason,r.created_at
+ `SELECT r.id::text,COALESCE(co.document_number,d.document_number) AS document_number,o.name outlet,p.name product,r.quantity,r.credit_amount::text,r.restock,r.qc_result,r.reason,r.created_at
  FROM delivery_returns r JOIN delivery_notes d ON d.id=r.delivery_id JOIN customer_orders co ON co.id=d.order_id
  JOIN outlets o ON o.id=co.outlet_id JOIN customer_order_items i ON i.id=r.order_item_id JOIN products p ON p.id=i.product_id
  ORDER BY r.created_at DESC LIMIT 80`);
@@ -65,8 +65,8 @@ export async function createV2Return(data:{requestKey:string;deliveryId:string;o
 }
 export async function listComplaints(){
  return query<{id:string;outlet:string;number:string|null;product:string|null;category:string;description:string;status:string;resolution:string;created_at:Date}>(
- `SELECT c.id::text,o.name outlet,d.document_number number,p.name product,c.category,c.description,c.status,c.resolution,c.created_at
- FROM outlet_complaints c JOIN outlets o ON o.id=c.outlet_id LEFT JOIN delivery_notes d ON d.id=c.delivery_id LEFT JOIN products p ON p.id=c.product_id
+ `SELECT c.id::text,o.name outlet,COALESCE(co.document_number,d.document_number) number,p.name product,c.category,c.description,c.status,c.resolution,c.created_at
+ FROM outlet_complaints c JOIN outlets o ON o.id=c.outlet_id LEFT JOIN delivery_notes d ON d.id=c.delivery_id LEFT JOIN customer_orders co ON co.id=d.order_id LEFT JOIN products p ON p.id=c.product_id
  ORDER BY c.created_at DESC LIMIT 80`);
 }
 export async function reportComplaint(data:{requestKey:string;outletId:string;deliveryId:string;productId:string;category:string;description:string},actor:string){

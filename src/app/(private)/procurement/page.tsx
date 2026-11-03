@@ -4,7 +4,7 @@ import { requireActor } from "@/lib/access";
 import { suppliers } from "@/lib/v2-master";
 import { listGrades, listSupplierPrices, listCoconutReceipts } from "@/lib/coconut-operations";
 import { PageHead, Panel, Empty, Notice, rupiah } from "@/components/ui";
-import { addGradeAction,addSupplierPriceAction,receiveAction } from "../coconut-actions";
+import { addGradeAction,editGradeAction,addSupplierPriceAction,receiveAction } from "../coconut-actions";
 export const dynamic="force-dynamic";
 export default async function Procurement({searchParams}:{searchParams:Promise<{success?:string;error?:string}>}){
  await requireActor(["owner","admin"]);
@@ -13,16 +13,29 @@ export default async function Procurement({searchParams}:{searchParams:Promise<{
  const ready=activeSuppliers.length>0&&grades.length>0;
  return <><PageHead eyebrow="PENGADAAN / BAHAN BAKU" title="Pembelian & Kelapa Masuk"
  description="Harga supplier, grade ketebalan, dan batch kelapa mentah yang diterima."/><Notice success={params.success} error={params.error}/>
- <Panel title="Kategori ketebalan kelapa" detail="Isi sesuai standar QC AFI Ara"><form action={addGradeAction} className="form-grid">
+ <Panel title="Kategori ketebalan kelapa" detail="Buat standar ukuran dan kualitas yang mudah digunakan saat pembelian serta QC"><form action={addGradeAction} className="form-grid">
   <label>Kode grade<input name="code" required minLength={2} maxLength={40} placeholder="GRADE-A"/></label>
   <label>Nama grade<input name="name" required maxLength={100} placeholder="Kelapa tebal"/></label>
-  <label>Minimum (mm, opsional)<input name="min" type="number" min="0" step=".01"/></label>
-  <label>Maksimum (mm, opsional)<input name="max" type="number" min="0" step=".01"/></label>
+  <label>Minimum ketebalan (mm, opsional)<input name="min" type="number" min="0" step=".01"/></label>
+  <label>Maksimum ketebalan (mm, opsional)<input name="max" type="number" min="0" step=".01"/></label>
   <label className="wide">Standar atau keterangan<input name="notes" maxLength={500}/></label>
-  <SubmitButton className="primary-button">Tambah Grade</SubmitButton>
+  <p className="form-hint wide">Isi sesuai standar QC usaha. Contoh: minimum 1,03 mm dan maksimum 1,50 mm jika itu memang standar yang disepakati. Kosongkan jika belum ditetapkan.</p><SubmitButton className="primary-button">Tambah Grade</SubmitButton>
  </form>
  {grades.length>0&&<div className="table-wrap"><table><thead><tr><th>Kode</th><th>Nama</th><th>Min (mm)</th><th>Maks (mm)</th></tr></thead>
- <tbody>{grades.map(g=><tr key={g.id}><td className="mono">{g.code}</td><td>{g.name}</td><td>{g.thickness_min_mm??"—"}</td><td>{g.thickness_max_mm??"—"}</td></tr>)}</tbody></table></div>}</Panel>
+ <tbody>{grades.map(g=><tr key={g.id}><td className="mono">{g.code}</td><td>{g.name}</td><td>{g.thickness_min_mm??"—"}</td><td>{g.thickness_max_mm??"—"}</td></tr>)}</tbody></table></div>}
+ {grades.map(g=><details className="edit-detail" key={g.id}>
+  <summary>Edit grade: {g.code} — {g.name}</summary>
+  <form action={editGradeAction} className="form-grid">
+   <input type="hidden" name="id" value={g.id}/>
+   <label>Kode grade<input name="code" required defaultValue={g.code}/></label>
+   <label>Nama grade<input name="name" required defaultValue={g.name}/></label>
+   <label>Minimum ketebalan (mm)<input name="min" type="number" min="0" step=".01" defaultValue={g.thickness_min_mm??""}/></label>
+   <label>Maksimum ketebalan (mm)<input name="max" type="number" min="0" step=".01" defaultValue={g.thickness_max_mm??""}/></label>
+   <label className="wide">Standar / keterangan<input name="notes" defaultValue={g.notes} maxLength={500}/></label>
+   <SubmitButton className="primary-button">Simpan Grade</SubmitButton>
+  </form>
+ </details>)}
+ </Panel>
  <Panel title="Catat harga supplier" detail="Harga per butir, historis">{!ready&&<p className="form-hint">Buat supplier dan grade terlebih dahulu.</p>}
  <form action={addSupplierPriceAction} className="form-grid">
   <label>Supplier<select name="supplierId" required defaultValue=""><option value="" disabled>Pilih supplier</option>{activeSuppliers.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label>

@@ -3,13 +3,18 @@ import {safeWrite} from "@/lib/safe-action";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireActor } from "@/lib/access";
-import {createGrade,addSupplierPrice,receiveCoconut,recordQc,recordProduction,recordVisit} from "@/lib/coconut-operations";
+import {createGrade,updateGrade,addSupplierPrice,receiveCoconut,recordQc,recordProduction,recordVisit} from "@/lib/coconut-operations";
 const s=(f:FormData,k:string)=>String(f.get(k)||"");
 const n=(f:FormData,k:string)=>Number(f.get(k));
 const optNum=(f:FormData,k:string)=>s(f,k).trim()===""?null:n(f,k);
 export async function addGradeAction(f:FormData){
  await requireActor(["owner","admin"]);
  await safeWrite("/procurement",()=>createGrade({code:s(f,"code"),name:s(f,"name"),min:optNum(f,"min"),max:optNum(f,"max"),notes:s(f,"notes")}));
+ revalidatePath("/procurement");redirect("/procurement?success=1");
+}
+export async function editGradeAction(f:FormData){
+ const a=await requireActor(["owner","admin"]);
+ await safeWrite("/procurement",()=>updateGrade({id:s(f,"id"),code:s(f,"code"),name:s(f,"name"),min:optNum(f,"min"),max:optNum(f,"max"),notes:s(f,"notes")},a.id));
  revalidatePath("/procurement");redirect("/procurement?success=1");
 }
 export async function addSupplierPriceAction(f:FormData){

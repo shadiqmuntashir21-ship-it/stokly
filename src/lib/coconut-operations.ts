@@ -8,8 +8,8 @@ const str=(value:string,max:number)=>value.trim().slice(0,max);
 const key=(s:string)=>{if(!uid(s)) throw new BusinessError("Kode transaksi tidak valid.");return s;};
 
 export async function listGrades(){
- return query<{id:string;code:string;name:string;thickness_min_mm:string|null;thickness_max_mm:string|null}>(
- "SELECT id::text,code,name,thickness_min_mm::text,thickness_max_mm::text FROM coconut_grades WHERE active=true ORDER BY name");
+ return query<{id:string;code:string;name:string;thickness_min_mm:string|null;thickness_max_mm:string|null;notes:string}>(
+ "SELECT id::text,code,name,thickness_min_mm::text,thickness_max_mm::text,notes FROM coconut_grades WHERE active=true ORDER BY name");
 }
 export async function listSupplierPrices(){
  return query<{id:string;supplier_name:string;grade_name:string;unit_price:string;effective_at:Date}>(
@@ -21,6 +21,20 @@ export async function createGrade(input:{code:string;name:string;min:number|null
  await query("INSERT INTO coconut_grades(code,name,thickness_min_mm,thickness_max_mm,notes) VALUES($1,$2,$3,$4,$5)",
  [input.code.toUpperCase(),str(input.name,100),input.min,input.max,str(input.notes,500)]);
 }
+
+export async function updateGrade(input:{id:string;code:string;name:string;min:number|null;max:number|null;notes:string},actor:string){
+ if(!uid(input.id)||!(/^[A-Z0-9_-]{2,40}$/.test(input.code.toUpperCase()))||input.name.trim().length<2)
+  throw new BusinessError("Kode dan nama grade harus valid.");
+ if((input.min!==null&&(!Number.isFinite(input.min)||input.min<0))||(input.max!==null&&(!Number.isFinite(input.max)||input.max<0))||(input.min!==null&&input.max!==null&&input.max<input.min))
+  throw new BusinessError("Batas ketebalan tidak valid: minimum tidak boleh lebih besar dari maksimum.");
+ await transaction(async c=>{
+  const result=await c.query("UPDATE coconut_grades SET code=$2,name=$3,thickness_min_mm=$4,thickness_max_mm=$5,notes=$6 WHERE id=$1 AND active=true RETURNING id",
+    [input.id,input.code.toUpperCase(),str(input.name,100),input.min,input.max,str(input.notes,500)]);
+  if(!result.rowCount)throw new BusinessError("Grade kelapa tidak ditemukan.");
+  await c.query("INSERT INTO activity_logs(actor_id,action,entity,entity_id) VALUES($1,'grade.update','coconut_grade',$2)",[actor,input.id]);
+ });
+}
+
 export async function addSupplierPrice(input:{supplierId:string;gradeId:string;price:number;note:string},actor:string){
  if(!uid(input.supplierId)||!uid(input.gradeId)||!money(input.price))throw new BusinessError("Supplier, grade atau harga tidak valid.");
  await query("INSERT INTO supplier_prices(supplier_id,grade_id,unit,unit_price,note,created_by) VALUES($1,$2,'BUTIR',$3,$4,$5)",

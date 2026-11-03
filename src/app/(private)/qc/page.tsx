@@ -9,13 +9,13 @@ export default async function QC({searchParams}:{searchParams:Promise<{success?:
  await requireActor(["owner","admin"]);
  const [batches,params]=await Promise.all([listCoconutReceipts(),searchParams]);
  const open=batches.filter(b=>b.quantity-b.accepted_qty-b.rejected_qty>0);
- return <><PageHead eyebrow="QUALITY CONTROL / BAHAN BAKU" title="QC & Kelapa Afkir" description="Periksa setiap batch: jumlah lolos dan afkir harus sesuai jumlah kelapa yang diperiksa."/><Notice success={params.success} error={params.error}/>
- <Panel title="Catat hasil QC" detail={open.length+" batch belum selesai"}>
+ return <><PageHead eyebrow="QUALITY CONTROL / BAHAN BAKU" title="QC & Kelapa Afkir" description="Pilih batch kelapa yang telah dicatat saat pembelian. Lolos QC + afkir tidak boleh melebihi sisa batch."/><Notice success={params.success} error={params.error}/>
+ <Panel title="Catat hasil QC" detail={open.length+" batch belum selesai"}>{batches.length===0&&<p className="form-hint">Belum ada batch. Buka Pembelian Kelapa, lalu pilih supplier dan grade untuk menyimpan penerimaan bahan baku terlebih dahulu.</p>}
  <form action={qcAction} className="form-grid">
  <input type="hidden" name="requestKey" value={randomUUID()}/>
  <label className="wide">Batch<select name="batchId" defaultValue="" required>
- <option value="" disabled>Pilih batch</option>{open.map(b=><option key={b.batch_id} value={b.batch_id}>{b.supplier} — {b.grade} — belum diperiksa {b.quantity-b.accepted_qty-b.rejected_qty} butir</option>)}</select></label>
- <label>Jumlah lolos QC<input name="passed" type="number" min="0" step="1" defaultValue="0" required/></label>
+ <option value="" disabled>Pilih batch</option>{open.map(b=><option key={b.batch_id} value={b.batch_id}>{new Date(b.received_at).toLocaleDateString("id-ID")} · {b.supplier} · {b.grade} · sisa QC {b.quantity-b.accepted_qty-b.rejected_qty} butir</option>)}</select></label>
+ <p className="form-hint wide">Contoh: dari 50 butir yang diperiksa, 42 lolos dan 8 afkir. Jika belum semuanya dicek, isi hanya jumlah yang sudah diperiksa.</p><label>Jumlah lolos QC<input name="passed" type="number" min="0" step="1" defaultValue="0" required/></label>
  <label>Jumlah afkir<input name="rejected" type="number" min="0" step="1" defaultValue="0" required/></label>
  <label className="wide">Alasan afkir (wajib jika afkir &gt; 0)<input name="reason" maxLength={400} placeholder="Busuk, pecah, tidak sesuai grade..."/></label>
  <SubmitButton className="primary-button" disabled={!open.length}>Simpan Hasil QC</SubmitButton>

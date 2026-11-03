@@ -31,7 +31,7 @@ export default async function Invoices({searchParams}:{searchParams:Promise<{suc
    <SubmitButton className="primary-button">Simpan Status Fisik</SubmitButton>
   </form>
  </Panel>
- <Panel title="Rekap Kwitansi Outlet" detail="Amount - Return = Final Amount; Final Amount - Terbayar = Sisa Piutang">
+ <p><a className="primary-button" href="/api/receipts/export">Unduh Rekap CSV</a></p><Panel title="Rekap Kwitansi Outlet" detail="Amount - Return = Final Amount; Final Amount - Terbayar = Sisa Piutang">
  {invoices.length===0?<Empty label="kwitansi"/>:<div className="table-wrap"><table><thead><tr><th>No. Kwitansi</th><th>TGL</th><th>Outlet</th><th>G.O</th><th>PCS</th><th>Amount</th><th>Return</th><th>Final Amount</th><th>Terbayar</th><th>Sisa Piutang</th><th>Payment</th><th>TGL Bayar</th><th>Metode</th><th>Fisik Kwitansi</th></tr></thead><tbody>{invoices.map(i=>{
  const final=Math.max(0,Number(i.gross)-Number(i.credit));
  const remaining=Math.max(0,final-Number(i.paid));
