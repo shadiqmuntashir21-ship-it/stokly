@@ -46,7 +46,8 @@ export async function createOrder(data:{requestKey:string;outletId:string;items:
    if(changed&&data.priceReason.trim().length<5)throw new BusinessError("Tulis alasan perubahan harga transaksi (minimal 5 karakter).");
    return {...i,price,master,changed};
   });
-  const order=await c.query<{id:string}>("INSERT INTO customer_orders(request_key,outlet_id,desired_delivery,note,created_by) VALUES($1,$2,$3,$4,$5) RETURNING id::text",[data.requestKey,data.outletId,data.deliveryDate||null,data.note.trim().slice(0,400),actor]);
+  const order=await c.query<{id:string;document_number:string|null}>("INSERT INTO customer_orders(request_key,outlet_id,desired_delivery,note,created_by,receipt_number_pending) VALUES($1,$2,$3,$4,$5,true) RETURNING id::text,document_number",[data.requestKey,data.outletId,data.deliveryDate||null,data.note.trim().slice(0,400),actor]);
+  if(order.rows[0].document_number)await c.query("UPDATE customer_orders SET receipt_number_pending=false WHERE id=$1",[order.rows[0].id]);
   for(const item of priced){
    const added=await c.query<{id:string}>("INSERT INTO customer_order_items(order_id,product_id,quantity,unit_price) VALUES($1,$2,$3,$4) RETURNING id::text",[order.rows[0].id,item.productId,item.quantity,item.price]);
    if(item.changed)await c.query("INSERT INTO order_price_overrides(order_item_id,standard_price,applied_price,reason,created_by) VALUES($1,$2,$3,$4,$5)",[added.rows[0].id,item.master,item.price,data.priceReason.trim().slice(0,400),actor]);
@@ -64,9 +65,12 @@ export async function dispatchOrder(data:{requestKey:string;orderId:string;items
  return transaction(async c=>{
   const previous=await c.query<{id:string}>("SELECT id::text FROM delivery_notes WHERE request_key=$1 AND created_by=$2",[data.requestKey,actor]);
   if(previous.rows[0])return previous.rows[0].id;
-  const order=await c.query<{status:string;document_number:string|null}>("SELECT status,document_number FROM customer_orders WHERE id=$1 FOR UPDATE",[data.orderId]);
+  const order=await c.query<{status:string;document_number:string|null;receipt_number_pending:boolean}>("SELECT status,document_number,receipt_number_pending FROM customer_orders WHERE id=$1 FOR UPDATE",[data.orderId]);
   if(!order.rows[0]||order.rows[0].status==='cancelled')throw new BusinessError("Order tidak ditemukan atau dibatalkan.");
-  if(!order.rows[0].document_number)await c.query("UPDATE customer_orders SET document_number=allocate_stokly_receipt_number() WHERE id=$1",[data.orderId]);
+  if(!order.rows[0].document_number&&order.rows[0].receipt_number_pending){
+   await c.query("UPDATE customer_orders SET document_number=allocate_stokly_receipt_number() WHERE id=$1",[data.orderId]);
+   await c.query("UPDATE customer_orders SET receipt_number_pending=false WHERE id=$1 AND document_number IS NOT NULL",[data.orderId]);
+  }
   const ids=data.items.map(i=>i.orderItemId);
   const lines=await c.query<{id:string;product_id:string;quantity:number;unit_price:string;shipped:number}>(
    "SELECT i.id::text,i.product_id::text,i.quantity,i.unit_price::text,COALESCE((SELECT SUM(x.quantity)::int FROM delivery_note_items x WHERE x.order_item_id=i.id),0)::int AS shipped FROM customer_order_items i WHERE i.order_id=$1 AND i.id=ANY($2::uuid[]) FOR UPDATE",

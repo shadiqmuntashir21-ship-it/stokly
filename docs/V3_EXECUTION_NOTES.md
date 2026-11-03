@@ -31,3 +31,14 @@
 - Historical mapping and activation of production receipt-number counter.
 - PDF printing, CSV export, robust cancellations/refunds, grade editing and QC batch guidance.
 - TypeScript/build and full runtime QA before release.
+
+
+## Deploy-safe release guard (3 Nov 2026)
+- Unverified historical numbering must not block orders or generate fake receipt numbers.
+- Postgres allocator returns NULL if next_number has not been verified/activated.
+- Only brand-new V3 orders receive receipt_number_pending=true when unnumbered.
+- Old orders are deliberately never auto-numbered, even on later dispatch.
+- Owner activates next_number once in /settings/receipts, after verifying full ledger and physical books.
+- Owner can assign numbers to a maximum 500 pending V3 orders per action; activity is audited.
+- Print is blocked for receipts with no assigned seven-digit number.
+- Legacy sale and shipment operations continue while the numbering gate is pending.

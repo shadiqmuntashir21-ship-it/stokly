@@ -36,6 +36,7 @@ const groups:{title:string;items:NavItem[]}[]=[
   {href:"/costing",label:"HPP Produksi",icon:Calculator,roles:["owner"]},
   {href:"/reports",label:"Laporan",icon:ChartColumn,roles:["owner","admin"]},
   {href:"/settings/security",label:"Ganti PIN Owner",icon:KeyRound,roles:["owner"]},
+  {href:"/settings/receipts",label:"Nomor Kwitansi",icon:FileText,roles:["owner"]},
  ]}
 ];
 const mobileHrefs=["/dashboard","/products","/orders","/outlets"];

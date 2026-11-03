@@ -16,6 +16,7 @@ export default async function PrintReceipt({params}:{params:Promise<{id:string}>
  ]);
  const order=all.find(x=>x.id===id);
  if(!order)return <p>Dokumen tidak ditemukan atau di luar daftar terbaru.</p>;
+ if(!order.document_number)return <p>Kwitansi belum dapat dicetak: nomor kwitansi masih menunggu verifikasi dan aktivasi oleh Owner. <Link href="/invoices">Kembali</Link></p>;
  const gross=Number(order.gross),credit=Number(order.credit),paid=Number(order.paid),net=Math.max(0,gross-credit);
  return <main className="print-receipt" style={{maxWidth:780,margin:"20px auto",padding:32,background:"#fff",color:"#172319",fontFamily:"Arial, sans-serif"}}>
   <div className="print-actions"><Link href="/invoices">Kembali ke Kwitansi</Link><p>Gunakan Ctrl+P / Cmd+P untuk mencetak atau menyimpan sebagai PDF.</p></div>

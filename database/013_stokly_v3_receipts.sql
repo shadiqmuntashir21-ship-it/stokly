@@ -19,12 +19,13 @@ BEGIN
  WHERE singleton=true AND next_number BETWEEN 1 AND 9999999
  RETURNING next_number-1 INTO allocated;
  IF allocated IS NULL THEN
-  RAISE EXCEPTION 'Nomor kwitansi belum dikonfigurasi atau sudah mencapai 9999999';
+  RETURN NULL; -- Pertahankan operasional dengan status menunggu nomor, tanpa mengarang nomor.
  END IF;
  RETURN lpad(allocated::text,7,'0');
 END $$;
 
 ALTER TABLE customer_orders ADD COLUMN IF NOT EXISTS document_number varchar(7);
+ALTER TABLE customer_orders ADD COLUMN IF NOT EXISTS receipt_number_pending boolean NOT NULL DEFAULT false;
 CREATE UNIQUE INDEX IF NOT EXISTS customer_orders_document_number_uniq
  ON customer_orders(document_number) WHERE document_number IS NOT NULL;
 ALTER TABLE customer_orders ALTER COLUMN document_number SET DEFAULT allocate_stokly_receipt_number();
@@ -62,3 +63,4 @@ CREATE INDEX IF NOT EXISTS idx_order_receipts_outlet_date ON customer_orders(out
 --    WHERE singleton=true AND next_number IS NULL;
 -- 3. DO NOT change delivery_notes.document_number; these are historic delivery identifiers.
 -- 4. Old order numbers stay NULL until explicitly reconciled; never silently relabel them.
+-- 5. New V3 orders without numbering are marked receipt_number_pending = true and may be safely backfilled only after Owner verifies first unused number.
