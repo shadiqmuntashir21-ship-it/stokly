@@ -3,7 +3,7 @@ import {safeWrite} from "@/lib/safe-action";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireActor } from "@/lib/access";
-import {saveProduct,setProductPrice,correctStock,archiveProduct,saveSupplier,archiveSupplier,saveOutlet,archiveOutlet} from "@/lib/v2-master";
+import {saveProduct,setProductPrice,correctStock,archiveProduct,saveSupplier,archiveSupplier,saveOutlet,archiveOutlet,createOutletGroup} from "@/lib/v2-master";
 const v=(f:FormData,k:string)=>String(f.get(k)||"");
 const n=(f:FormData,k:string)=>Number(f.get(k));
 export async function productSave(f:FormData){
@@ -36,10 +36,16 @@ export async function supplierArchive(f:FormData){
 }
 export async function outletSave(f:FormData){
  const a=await requireActor(["owner","admin","marketing"]);
- await safeWrite("/outlets",()=>saveOutlet({id:v(f,"id")||undefined,name:v(f,"name"),phone:v(f,"phone"),pic:v(f,"pic"),address:v(f,"address"),lat:v(f,"lat").trim()===""?null:Number(v(f,"lat")),lng:v(f,"lng").trim()===""?null:Number(v(f,"lng"))},a.id));
+ await safeWrite("/outlets",()=>saveOutlet({id:v(f,"id")||undefined,name:v(f,"name"),phone:v(f,"phone"),pic:v(f,"pic"),address:v(f,"address"),lat:v(f,"lat").trim()===""?null:Number(v(f,"lat")),lng:v(f,"lng").trim()===""?null:Number(v(f,"lng")),groupId:v(f,"groupId")},a.id));
  revalidatePath("/outlets");redirect("/outlets?success=1");
 }
 export async function outletArchive(f:FormData){
  const a=await requireActor(["owner","admin"]);await safeWrite("/outlets",()=>archiveOutlet(v(f,"id"),a.id));
+ revalidatePath("/outlets");redirect("/outlets?success=1");
+}
+
+export async function outletGroupSave(f:FormData){
+ const a=await requireActor(["owner","admin"]);
+ await safeWrite("/outlets",()=>createOutletGroup(v(f,"name"),a.id));
  revalidatePath("/outlets");redirect("/outlets?success=1");
 }
