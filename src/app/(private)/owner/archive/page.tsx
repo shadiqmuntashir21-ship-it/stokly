@@ -1,4 +1,3 @@
-import Link from "next/link";
 import {requireOwner} from "@/lib/access";
 import {archiveHistory,validateArchiveYear} from "@/lib/annual-archive";
 import {query} from "@/lib/db";
@@ -16,8 +15,9 @@ export default async function OwnerArchive({searchParams}:{searchParams:Promise<
   archiveHistory(),
   query<Blockers>(`SELECT
    (SELECT COUNT(*)::int FROM customer_orders o WHERE o.ordered_on>=make_date($1,1,1) AND o.ordered_on<make_date($1+1,1,1) AND o.status IN('confirmed','partially_delivered')) AS open_orders,
-   (SELECT GREATEST(0,COALESCE(SUM(i.gross),0)-COALESCE((SELECT SUM(r.credit_amount) FROM delivery_returns r JOIN delivery_notes d2 ON d2.id=r.delivery_id JOIN customer_orders o2 ON o2.id=d2.order_id WHERE o2.ordered_on>=make_date($1,1,1) AND o2.ordered_on<make_date($1+1,1,1)),0)
-    -COALESCE((SELECT SUM(p.amount) FROM delivery_payments p JOIN delivery_invoices i2 ON i2.id=p.invoice_id JOIN delivery_notes d3 ON d3.id=i2.delivery_id JOIN customer_orders o3 ON o3.id=d3.order_id WHERE o3.ordered_on>=make_date($1,1,1) AND o3.ordered_on<make_date($1+1,1,1)),0))::text
+   (SELECT COALESCE(SUM(GREATEST(0,i.gross
+    -COALESCE((SELECT SUM(r.credit_amount) FROM delivery_returns r WHERE r.delivery_id=i.delivery_id),0)
+    -COALESCE((SELECT SUM(p.amount) FROM delivery_payments p WHERE p.invoice_id=i.id),0))),0)::text
     FROM delivery_invoices i JOIN delivery_notes d ON d.id=i.delivery_id JOIN customer_orders o ON o.id=d.order_id WHERE o.ordered_on>=make_date($1,1,1) AND o.ordered_on<make_date($1+1,1,1) AND i.status='issued') AS outstanding,
    (SELECT COUNT(*)::int FROM delivery_refund_obligations r JOIN delivery_notes d ON d.id=r.delivery_id JOIN customer_orders o ON o.id=d.order_id WHERE o.ordered_on>=make_date($1,1,1) AND o.ordered_on<make_date($1+1,1,1) AND r.status='pending') AS pending_refunds,
    (SELECT COUNT(*)::int FROM coconut_batches b JOIN coconut_receipts r ON r.id=b.receipt_id WHERE (r.received_at AT TIME ZONE 'Asia/Makassar')::date>=make_date($1,1,1) AND (r.received_at AT TIME ZONE 'Asia/Makassar')::date<make_date($1+1,1,1) AND (b.received_qty>b.accepted_qty+b.rejected_qty OR b.accepted_qty>b.consumed_qty)) AS active_batches`,[year])
@@ -32,7 +32,7 @@ export default async function OwnerArchive({searchParams}:{searchParams:Promise<
     <button className="primary-button" type="submit">Lihat Kondisi Tahun</button>
    </form>
    <div style={{padding:20}}>
-    <p><Link className="primary-button" href={"/api/owner/archive/"+year}>Unduh ZIP Arsip {year}</Link></p>
+    <p><a className="primary-button" href={"/api/owner/archive/"+year}>Unduh ZIP Arsip {year}</a></p>
     <p className="form-hint">Arsip tahun berjalan adalah snapshot sementara. Sebelum menghapus data historis, unduh ulang sesudah semua transaksi terkait selesai dan cocokkan arsip dengan buku fisik.</p>
    </div>
   </Panel>

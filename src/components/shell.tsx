@@ -44,6 +44,7 @@ const ownerGroups:{title:string;items:NavItem[]}[]=[
   {href:"/reports",label:"Laporan Terpadu",icon:ChartColumn,roles:["owner"]},
   {href:"/closeout",label:"Tutup Buku Harian",icon:ClipboardList,roles:["owner"]}]},
  {title:"Kontrol & Pengaturan",items:[
+  {href:"/owner/oversight",label:"Audit & Pengawasan",icon:ClipboardList,roles:["owner"]},
   {href:"/owner/receipts",label:"Kwitansi Lama",icon:FileText,roles:["owner"]},
   {href:"/owner/archive",label:"Arsip Tahunan",icon:Package,roles:["owner"]},
   {href:"/owner/settings",label:"Pengaturan Bisnis",icon:KeyRound,roles:["owner"]},
