@@ -24,7 +24,7 @@ export default async function LegacyReceipts({searchParams}:{searchParams:Promis
    <form action={legacyPaymentAction} className="form-grid">
     <input type="hidden" name="requestKey" value={randomUUID()}/><input name="number" type="hidden" value={chosen.document_number}/>
     <label>Tanggal terima<input name="date" type="date" defaultValue={today()} required/></label>
-    <label>Jumlah diterima (maksimal {rupiah(chosen.confirmed_due)})<input name="amount" type="number" min="1" step="0.01" max={Number(chosen.confirmed_due)} required/></label>
+    <label>Jumlah diterima (maksimal {rupiah(chosen.confirmed_due??0)})<input name="amount" type="number" min="1" step="0.01" max={Number(chosen.confirmed_due)} required/></label>
     <label>Metode<select name="method" defaultValue="CASH"><option value="CASH">Tunai</option><option value="TRF">Transfer</option><option value="OTHER">Lainnya</option></select></label>
     <label>Referensi / bukti<input name="note" maxLength={250}/></label>
     <SubmitButton className="primary-button">Catat Pembayaran Historis</SubmitButton>
@@ -32,7 +32,7 @@ export default async function LegacyReceipts({searchParams}:{searchParams:Promis
   </Panel>}
   <Panel title="Daftar UNPAID, sebagian dan perlu verifikasi" detail="Dihitung ulang dari transaksi; bukan pivot statis">
    <div className="table-wrap"><table><thead><tr><th>Nomor</th><th>Tanggal</th><th>Outlet</th><th>Tagihan</th><th>Sisa pasti</th><th>Status</th><th>Tindakan</th></tr></thead><tbody>
-    {data.unpaid.map(x=><tr key={x.document_number}><td className="mono">{x.document_number}</td><td>{x.issued_on||"—"}</td><td>{x.outlet_name}</td><td>{rupiah(x.final_amount)}</td><td>{x.needs_reconciliation?"Belum bisa dihitung":rupiah(x.confirmed_due)}</td><td>{x.needs_reconciliation?"Perlu rekonsiliasi":x.status}</td><td>{!x.needs_reconciliation&&Number(x.confirmed_due)>0?<Link href={"/invoices/legacy?number="+x.document_number}>Catat bayar</Link>:"—"}</td></tr>)}
+    {data.unpaid.map(x=><tr key={x.document_number}><td className="mono">{x.document_number}</td><td>{x.issued_on||"—"}</td><td>{x.outlet_name}</td><td>{rupiah(x.final_amount)}</td><td>{x.needs_reconciliation?"Belum bisa dihitung":rupiah(x.confirmed_due??0)}</td><td>{x.needs_reconciliation?"Perlu rekonsiliasi":x.status}</td><td>{!x.needs_reconciliation&&Number(x.confirmed_due)>0?<Link href={"/invoices/legacy?number="+x.document_number}>Catat bayar</Link>:"—"}</td></tr>)}
    </tbody></table></div>
    <p className="form-hint">Kuitansi PARTIAL atau tanpa status yang tidak mempunyai rincian pembayaran tidak diasumsikan lunas maupun memiliki angka sisa pasti. Perlu pencocokan buku kas atau bank oleh Owner.</p>
   </Panel>

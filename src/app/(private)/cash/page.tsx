@@ -40,7 +40,7 @@ export default async function Cash({searchParams}:{searchParams:Promise<{success
  <Panel title="Transaksi kas baru"><div className="table-wrap"><table><thead><tr><th>Tanggal</th><th>Jenis</th><th>Kategori</th><th>Keterangan</th><th>Nominal</th></tr></thead><tbody>
   {entries.map(x=><tr key={x.id}><td>{x.entry_date}</td><td>{x.direction==="IN"?"Masuk":"Keluar"}</td><td>{x.category}</td><td>{x.description}</td><td>{rupiah(x.amount)}</td></tr>)}</tbody></table></div></Panel>
  <Panel title="Riwayat Kas Kecil KELAPA GO" detail="Impor dari spreadsheet, tidak dihitung sebagai pengeluaran baru"><div className="table-wrap"><table><thead><tr><th>Tanggal</th><th>Uraian</th><th>Kelompok</th><th>Masuk</th><th>Keluar</th><th>Saldo tertulis</th></tr></thead><tbody>
-  {history.map(x=><tr key={x.source_row}><td>{x.entry_date||"—"}</td><td>{x.description}</td><td>{x.category||"—"}</td><td>{rupiah(x.money_in)}</td><td>{rupiah(x.money_out)}</td><td>{rupiah(x.recorded_balance)}</td></tr>)}</tbody></table></div>
+  {history.map(x=><tr key={x.source_row}><td>{x.entry_date||"—"}</td><td>{x.description}</td><td>{x.category||"—"}</td><td>{rupiah(x.money_in)}</td><td>{rupiah(x.money_out)}</td><td>{rupiah(x.recorded_balance??0)}</td></tr>)}</tbody></table></div>
   <p className="form-hint">*Saldo baru dihitung dari saldo tertulis terakhir pada spreadsheet ditambah perubahan kas baru. Sebelum diperlakukan sebagai uang fisik sebenarnya, Owner harus menghitung kas dan mencocokkan selisih.</p></Panel>
  </>;
 }

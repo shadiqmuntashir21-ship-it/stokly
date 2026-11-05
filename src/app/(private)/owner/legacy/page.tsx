@@ -37,7 +37,7 @@ export default async function KelapaGoHistory({searchParams}:{searchParams:Promi
   <p className="form-hint">Kuitansi UNPAID yang sudah dibayar melalui STOKLY langsung berkurang dari daftar ini. Kuitansi status PARTIAL/blank memerlukan rekonsiliasi karena jumlah pembayaran lama belum diketahui secara pasti.</p>
   <p><Link href="/invoices/legacy">Lihat, cari dan catat pembayaran kuitansi lama →</Link></p>
   <div className="table-wrap"><table><thead><tr><th>Nota</th><th>Outlet</th><th>Tanggal</th><th>Sisa pasti</th><th>Status</th></tr></thead><tbody>
-   {summary.unpaid.slice(0,35).map(x=><tr key={x.document_number}><td>{x.document_number}</td><td>{x.outlet_name}</td><td>{x.issued_on||"—"}</td><td>{x.needs_reconciliation?"Perlu cek":rupiah(x.confirmed_due)}</td><td>{x.status}</td></tr>)}
+   {summary.unpaid.slice(0,35).map(x=><tr key={x.document_number}><td>{x.document_number}</td><td>{x.outlet_name}</td><td>{x.issued_on||"—"}</td><td>{x.needs_reconciliation?"Perlu cek":rupiah(x.confirmed_due??0)}</td><td>{x.status}</td></tr>)}
   </tbody></table></div>
  </Panel>
  <Panel title="Pivot Kwitansi / JUALAN — ringkasan outlet otomatis">

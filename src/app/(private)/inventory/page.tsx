@@ -35,7 +35,7 @@ export default async function Inventory({searchParams}:{searchParams:Promise<{su
   <SubmitButton className="primary-button">Catat Pergerakan</SubmitButton>
  </form></Panel>
  <Panel title="Daftar inventaris"><div className="table-wrap"><table><thead><tr><th>Barang</th><th>Dimiliki</th><th>Dipinjam</th><th>Tersedia (perkiraan)</th><th>Nilai historis</th></tr></thead><tbody>
- {assets.map(x=><tr key={x.id}><td>{x.name}</td><td>{x.quantity}</td><td>{x.loaned}</td><td>{Math.max(0,x.quantity-x.loaned)}</td><td>{rupiah(x.total_cost)}</td></tr>)}</tbody></table></div></Panel>
+ {assets.map(x=><tr key={x.id}><td>{x.name}</td><td>{x.quantity}</td><td>{x.loaned}</td><td>{Math.max(0,x.quantity-x.loaned)}</td><td>{rupiah(x.total_cost??0)}</td></tr>)}</tbody></table></div></Panel>
  <Panel title="Riwayat peminjaman / pengembalian"><div className="table-wrap"><table><thead><tr><th>Tanggal</th><th>Barang</th><th>Jenis</th><th>Jumlah</th><th>Outlet</th></tr></thead><tbody>
  {moves.map((x,i)=><tr key={i}><td>{x.movement_date}</td><td>{x.asset}</td><td>{x.kind}</td><td>{x.quantity}</td><td>{x.outlet||"—"}</td></tr>)}</tbody></table></div></Panel>
  <Panel title="Riwayat Keranjang KELAPA GO (referensi)"><div className="table-wrap"><table><thead><tr><th>Jenis</th><th>Outlet</th><th>Jumlah</th><th>Saldo tertulis</th><th>Catatan</th></tr></thead><tbody>
