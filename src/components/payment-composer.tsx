@@ -2,9 +2,10 @@
 import {useState} from "react";
 import {payAction} from "@/app/(private)/order-actions";
 import {SubmitButton} from "@/components/submit-button";
+import {invoiceBalance} from "@/lib/business-math";
 type Invoice={id:string;document_number:string|null;outlet:string;gross:string;credit:string;paid:string;deliveries:number;status:string};
 const currency=(n:number)=>new Intl.NumberFormat("id-ID",{style:"currency",currency:"IDR",maximumFractionDigits:0}).format(n);
-const due=(x:Invoice)=>Math.max(0,Number(x.gross)-Number(x.credit)-Number(x.paid));
+const due=(x:Invoice)=>invoiceBalance(x.gross,x.credit,x.paid).due;
 export function PaymentComposer({invoices,requestKey,initialOrder=""}:{invoices:Invoice[];requestKey:string;initialOrder?:string}){
  const options=invoices.filter(x=>x.status!=="cancelled"&&x.deliveries>0&&due(x)>0);
  const [selected,setSelected]=useState(initialOrder&&options.some(x=>x.id===initialOrder)?initialOrder:"");

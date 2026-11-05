@@ -3,6 +3,7 @@ import {requireActor} from "@/lib/access";
 import {getOrderDraft,listOrderAudit,listInvoices} from "@/lib/order-operations";
 import {PageHead,Panel,Notice,rupiah} from "@/components/ui";
 import {SubmitButton} from "@/components/submit-button";
+import {invoiceBalance} from "@/lib/business-math";
 import {editDraftAction,cancelDraftAction} from "../../order-actions";
 export const dynamic="force-dynamic";
 export default async function OrderDetail({params,searchParams}:{params:Promise<{id:string}>;searchParams:Promise<{success?:string;error?:string}>}){
@@ -12,7 +13,7 @@ export default async function OrderDetail({params,searchParams}:{params:Promise<
  if(!order)return <p>Order tidak ditemukan. <Link href="/orders">Kembali ke daftar</Link></p>;
  const canEdit=order.status==="confirmed"&&order.items.every(x=>x.shipped===0)&&actor.role!=="marketing";
  const ledger=invoice[0];
- const due=ledger?Math.max(0,Number(ledger.gross)-Number(ledger.credit)-Number(ledger.paid)):0;
+ const due=ledger?invoiceBalance(ledger.gross,ledger.credit,ledger.paid).due:0;
  return <><PageHead eyebrow="TRANSAKSI / DETAIL" title={"Order "+(order.document_number||"Belum bernomor")} description={order.outlet+" · "+order.status.replaceAll("_"," ")}/><Notice success={flags.success} error={flags.error}/>
  <p><Link href="/orders">← Kembali ke order</Link> · <Link href={"/orders?repeat="+id}>Salin sebagai order baru</Link></p>
  <Panel title="Rincian barang"><div className="table-wrap"><table><thead><tr><th>Produk</th><th>Dipesan</th><th>Terkirim</th><th>Harga/unit</th><th>Subtotal</th></tr></thead><tbody>

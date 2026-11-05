@@ -5,6 +5,7 @@ import {listInvoices} from "@/lib/order-operations";
 import {PageHead,Panel,Empty,Notice,rupiah} from "@/components/ui";
 import {SubmitButton} from "@/components/submit-button";
 import {PaymentComposer} from "@/components/payment-composer";
+import {invoiceBalance} from "@/lib/business-math";
 import {listPendingRefunds} from "@/lib/return-operations";
 import {settleRefundAction} from "../outlet-returns/actions";
 import {payAction,physicalReceiptAction} from "../order-actions";
@@ -55,8 +56,7 @@ export default async function Invoices({searchParams}:{searchParams:Promise<{suc
  </form>
  <p className="form-hint">Amount - Return = Final Amount. Final Amount - Terbayar = Sisa Piutang.</p>
  {invoices.length===0?<Empty label="kwitansi"/>:<div className="table-wrap"><table><thead><tr><th>No. Kwitansi</th><th>TGL</th><th>Outlet</th><th>G.O</th><th>PCS</th><th>Amount</th><th>Return</th><th>Final Amount</th><th>Terbayar</th><th>Sisa Piutang</th><th>Payment</th><th>TGL Bayar</th><th>Metode</th><th>Fisik Kwitansi</th></tr></thead><tbody>{invoices.map(i=>{
- const final=Math.max(0,Number(i.gross)-Number(i.credit));
- const remaining=Math.max(0,final-Number(i.paid));
+ const {final,due:remaining}=invoiceBalance(i.gross,i.credit,i.paid);
  const status=i.status==="cancelled"?"Batal":i.deliveries===0?"Belum dikirim":remaining===0?"Lunas":Number(i.paid)>0?"Sebagian":"Belum bayar";
  return <tr key={i.id}><td className="mono"><Link href={"/receipts/"+i.id+"/print"}>{i.document_number||"Menunggu nomor / legacy"}</Link></td><td>{i.ordered_on}</td><td>{i.outlet}</td><td>{i.group_name}</td><td>{i.pcs}</td><td>{rupiah(i.gross)}</td><td>{rupiah(i.credit)}</td><td>{rupiah(final)}</td><td>{rupiah(i.paid)}</td><td>{rupiah(remaining)}</td><td>{status}</td><td>{i.paid_at||"—"}</td><td>{i.payment_method||"—"}</td><td>{i.physical_receipt_type||"—"} / {i.physical_receipt_status}</td></tr>;
  })}</tbody></table></div>}
