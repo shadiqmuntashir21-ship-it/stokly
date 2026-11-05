@@ -2,42 +2,42 @@
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, Package, PackagePlus, ShoppingCart, RotateCcw, ChartColumn, LogOut, Menu, X, KeyRound, LayoutGrid, Truck, Sprout, ClipboardCheck, Factory, CalendarDays, ClipboardList, FileText, WalletCards, MapPinned, Calculator, ArrowUpRight, Search, Wifi, ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { useEffect,useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { BrandLockup } from "@/components/brand";
 import type { Actor,Role } from "@/lib/access";
 
 type NavItem={href:string;label:string;icon:typeof LayoutDashboard;roles:Role[]};
 const groups:{title:string;items:NavItem[]}[]=[
- {title:"Ringkasan",items:[
-  {href:"/dashboard",label:"Dashboard",icon:LayoutDashboard,roles:["owner","admin","marketing"]},
-  {href:"/products",label:"Produk & Stok",icon:Package,roles:["owner","admin","marketing"]},
- ]},
- {title:"Operasional Kelapa",items:[
-  {href:"/suppliers",label:"Supplier & Petani",icon:Sprout,roles:["owner","admin"]},
-  {href:"/procurement",label:"Pembelian Kelapa",icon:ClipboardList,roles:["owner","admin"]},
-  {href:"/qc",label:"QC & Afkir",icon:ClipboardCheck,roles:["owner","admin"]},
-  {href:"/production",label:"Pengupasan & Produksi",icon:Factory,roles:["owner","admin"]},
-  {href:"/receipts",label:"Barang Masuk (Manual)",icon:PackagePlus,roles:["owner","admin"]},
-  {href:"/issues",label:"Penyesuaian Keluar",icon:PackagePlus,roles:["owner","admin"]},
- ]},
- {title:"Penjualan & Pelanggan",items:[
+ {title:"Beranda",items:[{href:"/dashboard",label:"Pekerjaan Hari Ini",icon:LayoutDashboard,roles:["owner","admin","marketing"]}]},
+ {title:"Pembelian & QC",items:[
+  {href:"/procurement",label:"Pembelian Kelapa",icon:Sprout,roles:["owner","admin"]},
+  {href:"/qc",label:"QC & Afkir",icon:ClipboardCheck,roles:["owner","admin"]}]},
+ {title:"Produksi & Stok",items:[
+  {href:"/production",label:"Produksi",icon:Factory,roles:["owner","admin"]},
+  {href:"/products",label:"Produk & Stok",icon:Package,roles:["owner","admin","marketing"]}]},
+ {title:"Penjualan & Pengiriman",items:[
+  {href:"/orders",label:"Order & Pengiriman",icon:ShoppingCart,roles:["owner","admin","marketing"]},
   {href:"/outlets",label:"Outlet",icon:Truck,roles:["owner","admin","marketing"]},
+  {href:"/routes",label:"Rute & Ongkir",icon:MapPinned,roles:["owner","admin"]}]},
+ {title:"Pembayaran & Retur",items:[
+  {href:"/invoices",label:"Kwitansi & Pembayaran",icon:FileText,roles:["owner","admin"]},
+  {href:"/outlet-returns",label:"Retur & Komplain",icon:RotateCcw,roles:["owner","admin","marketing"]}]},
+ {title:"Laporan",items:[
+  {href:"/reports",label:"Laporan Terpadu",icon:ChartColumn,roles:["owner","admin"]},
+  {href:"/expenses",label:"Biaya & Keuangan",icon:WalletCards,roles:["owner"]},
+  {href:"/costing",label:"HPP Produksi",icon:Calculator,roles:["owner"]}]},
+ {title:"Pengaturan & Lainnya",items:[
+  {href:"/suppliers",label:"Supplier & Petani",icon:Sprout,roles:["owner","admin"]},
   {href:"/visits",label:"Kunjungan Marketing",icon:CalendarDays,roles:["owner","admin","marketing"]},
-  {href:"/orders",label:"Order Outlet",icon:ShoppingCart,roles:["owner","admin","marketing"]},
-  {href:"/invoices",label:"Nota & Pembayaran",icon:FileText,roles:["owner","admin"]},
-  {href:"/outlet-returns",label:"Retur & Komplain",icon:RotateCcw,roles:["owner","admin","marketing"]},
-  {href:"/sales",label:"Kasir Lama",icon:ShoppingCart,roles:["owner","admin","marketing"]},
-  {href:"/returns",label:"Retur Kasir Lama",icon:RotateCcw,roles:["owner","admin"]},
- ]},
- {title:"Analitik & Manajemen",items:[
-  {href:"/routes",label:"Rute & Ongkir",icon:MapPinned,roles:["owner","admin"]},
-  {href:"/expenses",label:"Buku Biaya",icon:WalletCards,roles:["owner"]},
-  {href:"/costing",label:"HPP Produksi",icon:Calculator,roles:["owner"]},
-  {href:"/reports",label:"Laporan",icon:ChartColumn,roles:["owner","admin"]},
   {href:"/settings/security",label:"Ganti PIN Owner",icon:KeyRound,roles:["owner"]},
-  {href:"/settings/receipts",label:"Nomor Kwitansi",icon:FileText,roles:["owner"]},
- ]}
+  {href:"/settings/receipts",label:"Nomor Kwitansi",icon:FileText,roles:["owner"]}]}
+];
+const legacyItems:NavItem[]=[
+ {href:"/receipts",label:"Barang Masuk Manual (Lama)",icon:PackagePlus,roles:["owner","admin"]},
+ {href:"/issues",label:"Barang Keluar Nonjual",icon:PackagePlus,roles:["owner","admin"]},
+ {href:"/sales",label:"Kasir Lama",icon:ShoppingCart,roles:["owner","admin","marketing"]},
+ {href:"/returns",label:"Retur Kasir Lama",icon:RotateCcw,roles:["owner","admin"]}
 ];
 const mobileHrefs=["/dashboard","/products","/orders","/outlets"];
 function NavFeedback(){
@@ -48,7 +48,11 @@ export function Shell({actor,children}:{actor:Actor;children:React.ReactNode}){
  const pathname=usePathname();
  const [open,setOpen]=useState(false);
  const [search,setSearch]=useState("");
+ const [legacyOpen,setLegacyOpen]=useState(false);
+ const [online,setOnline]=useState(true);
+ useEffect(()=>{const update=()=>setOnline(navigator.onLine);update();window.addEventListener("online",update);window.addEventListener("offline",update);return ()=>{window.removeEventListener("online",update);window.removeEventListener("offline",update)};},[]);
  const visible=groups.map(g=>({...g,items:g.items.filter(x=>x.roles.includes(actor.role)&&x.label.toLowerCase().includes(search.toLowerCase()))})).filter(g=>g.items.length);
+ const oldItems=legacyItems.filter(x=>x.roles.includes(actor.role)&&(legacyOpen||!!search)&&x.label.toLowerCase().includes(search.toLowerCase()));
  const mobile=groups.flatMap(g=>g.items).filter(x=>mobileHrefs.includes(x.href)&&x.roles.includes(actor.role));
  async function signOut(){
   if(actor.role==="owner")await authClient.signOut();
@@ -65,7 +69,8 @@ export function Shell({actor,children}:{actor:Actor;children:React.ReactNode}){
       <Icon size={18} strokeWidth={1.8}/><span className="nav-text">{label}</span><NavFeedback/>
      </Link>)}
     </div>)}
-    {!visible.length&&<p className="nav-empty">Fitur tidak ditemukan.</p>}
+    <div className="nav-group"><button type="button" className="logout-button" onClick={()=>setLegacyOpen(x=>!x)} aria-expanded={legacyOpen}>{legacyOpen?"Tutup menu lama":"Lihat menu arsip/lama"}</button>{oldItems.map(({href,label,icon:Icon})=><Link className="nav-link" key={href} href={href} onClick={()=>setOpen(false)}><Icon size={18}/><span className="nav-text">{label}</span></Link>)}</div>
+    {!visible.length&&!oldItems.length&&<p className="nav-empty">Fitur tidak ditemukan.</p>
    </nav>
    <div className="sidebar-bottom"><div className="user-info"><span className="avatar">{actor.name.charAt(0).toUpperCase()}</span><span><b>{actor.name}</b><small>{actor.role==="owner"?"Owner · Akses penuh":actor.role==="admin"?"Admin operasional":"Tim marketing"}</small></span></div>
     <button className="logout-button" onClick={signOut}><LogOut size={17}/>{actor.role==="owner"?"Kunci Room Owner":"Ganti Room"}<ChevronRight size={14}/></button></div>
@@ -75,7 +80,7 @@ export function Shell({actor,children}:{actor:Actor;children:React.ReactNode}){
    <header className="topbar">
     <div className="topbar-start"><button className="menu-button" aria-label="Buka menu" onClick={()=>setOpen(true)}><Menu size={22}/></button>
      <span className="topbar-section">WORKSPACE <ChevronRight size={12}/> <strong>{groups.flatMap(g=>g.items).find(x=>x.href===pathname)?.label||"STOKLY"}</strong></span></div>
-    <div className="topbar-right"><span className="live-pill"><Wifi size={14}/> Online</span><span className="room-pill">{actor.role==="owner"?"OWNER":actor.role==="admin"?"ADMIN":"MARKETING"}</span><span className="top-avatar">{actor.name.charAt(0).toUpperCase()}</span></div>
+    <div className="topbar-right"><span className={"live-pill "+(!online?"status-danger":"")}><Wifi size={14}/> {online?"Online":"Offline"}</span><span className="room-pill">{actor.role==="owner"?"OWNER":actor.role==="admin"?"ADMIN":"MARKETING"}</span><span className="top-avatar">{actor.name.charAt(0).toUpperCase()}</span></div>
    </header>
    <main className="content" id="main-content">{children}</main>
    <footer className="app-footer">STOKLY <span>·</span> Kelapa Branding Indonesia <span>·</span> Operasional usaha dalam satu ruang.</footer>
