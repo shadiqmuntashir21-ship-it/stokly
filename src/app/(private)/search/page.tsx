@@ -16,7 +16,7 @@ export default async function Search({searchParams}:{searchParams:Promise<{q?:st
   query<Product>("SELECT id::text,name,sku,price::text FROM products WHERE active=true AND (name ILIKE $1 OR sku ILIKE $1) ORDER BY name LIMIT 20",[pattern]),
   query<Outlet>("SELECT id::text,name,address FROM outlets WHERE active=true AND (name ILIKE $1 OR address ILIKE $1) ORDER BY name LIMIT 20",[pattern]),
   actor.role==="marketing"?Promise.resolve([]):query<Supplier>("SELECT id::text,name,phone FROM suppliers WHERE active=true AND (name ILIKE $1 OR phone ILIKE $1) ORDER BY name LIMIT 20",[pattern])
- ]:[[],[],[],[]];
+ ]):[[],[],[],[]];
  return <><PageHead eyebrow="PENCARIAN / SEMUA DATA" title="Cari di STOKLY" description="Cari nomor kwitansi, nama outlet, produk, SKU, atau supplier dari satu tempat."/>
  <Panel title="Pencarian cepat">
   <form method="get" className="form-grid"><label className="wide">Kata kunci<input name="q" defaultValue={q} autoFocus maxLength={80} placeholder="Contoh: 9000000, RM Sidrap atau kelapa kupas"/></label><button className="primary-button" type="submit">Cari Data</button></form>
