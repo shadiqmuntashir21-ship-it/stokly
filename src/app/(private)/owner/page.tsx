@@ -23,8 +23,8 @@ export default async function OwnerHome({searchParams}:{searchParams:Promise<{fr
     FROM delivery_notes d JOIN delivery_invoices i ON i.delivery_id=d.id AND i.status='issued'
     WHERE ($1::date IS NULL OR d.delivered_on>=$1) AND ($2::date IS NULL OR d.delivered_on<=$2)
     GROUP BY d.delivered_on ORDER BY d.delivered_on DESC LIMIT 14`,[period.from,period.to]),
-  query<{receipts:number;gross:string;unpaid:string;cash:string;assets:number}>(
-   "SELECT (SELECT COUNT(*)::int FROM legacy_receipts) receipts,(SELECT COALESCE(SUM(gross-return_value),0)::text FROM legacy_receipts) gross,(SELECT COALESCE(SUM(confirmed_due),0)::text FROM v_go_unpaid_current) unpaid,(SELECT recorded_balance::text FROM legacy_cash_entries WHERE recorded_balance IS NOT NULL ORDER BY source_row DESC LIMIT 1) cash,(SELECT COUNT(*)::int FROM inventory_assets) assets")
+  query<{receipts:number;gross:string;unpaid:string;cash:string;assets:number;unpriced_products:number}>(
+   "SELECT (SELECT COUNT(*)::int FROM legacy_receipts) receipts,(SELECT COALESCE(SUM(gross-return_value),0)::text FROM legacy_receipts) gross,(SELECT COALESCE(SUM(confirmed_due),0)::text FROM v_go_unpaid_current) unpaid,(SELECT recorded_balance::text FROM legacy_cash_entries WHERE recorded_balance IS NOT NULL ORDER BY source_row DESC LIMIT 1) cash,(SELECT COUNT(*)::int FROM inventory_assets) assets,(SELECT COUNT(*)::int FROM products WHERE active=true AND category<>'Afkir' AND price<=0) unpriced_products")
  ]);
  const ranking=[...outlets].sort((a,b)=>(Number(b.gross)-Number(b.credits))-(Number(a.gross)-Number(a.credits))).slice(0,5);
  const max=Math.max(1,...days.map(d=>Math.max(0,Number(d.gross)-Number(d.credit))));
@@ -78,6 +78,11 @@ export default async function OwnerHome({searchParams}:{searchParams:Promise<{fr
    }):<p className="form-hint">Belum ada penjualan terkirim pada periode yang dipilih.</p>}
   </div>
  </Panel>
+ {go[0]?.unpriced_products>0&&<Panel title="Harga jual masih perlu ditetapkan">
+   <div style={{padding:18}}><p><strong>{go[0].unpriced_products} produk</strong> belum mempunyai harga jual aktif. Data spreadsheet tidak cukup untuk menentukan harga setiap grade hasil produksi secara pasti.</p>
+   <p className="form-hint">Silakan atur harga di Master Produk & Stok terlebih dahulu. Nota penjualan baru dengan harga nol tidak diizinkan.</p>
+   <p><Link href="/products">Atur harga jual produk →</Link></p></div>
+ </Panel>}
  <Panel title="Data awal KELAPA GO — ringkasan historis (terpisah)">
   <div className="metrics-grid">
    <section className="metric"><div className="metric-label">Kuitansi historis</div><strong>{go[0]?.receipts||0}</strong></section>
