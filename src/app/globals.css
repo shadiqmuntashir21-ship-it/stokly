@@ -245,3 +245,10 @@ input:focus,select:focus,textarea:focus{border-color:#31744d;box-shadow:0 0 0 3p
 .submit-feedback{position:relative;gap:9px}
 .submit-feedback[aria-busy="true"]{opacity:.86;cursor:progress}
 .submit-spinner{display:inline-block;width:15px;height:15px;border:2px solid #ffffff70;border-top-color:#fff;border-radius:50%;animation:navspin .75s linear infinite}
+
+/* V4.1: natural-size original brand, no giant duplicated logo image. */
+.landing-feature{gap:38px}
+.landing-brand .brand-image-wrap{box-shadow:0 7px 20px #071c1530}
+.landing-copy{max-width:450px}
+@media(max-width:1000px){.landing-feature{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:24px}.landing-brand,.landing-copy{display:block}}
+@media(max-width:470px){.landing-feature{gap:28px}.landing-copy{grid-column:auto;grid-row:auto}}

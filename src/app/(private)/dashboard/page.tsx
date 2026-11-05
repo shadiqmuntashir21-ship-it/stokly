@@ -33,7 +33,7 @@ export default async function Dashboard(){
    <div className="dashboard-hero-copy"><p className="eyebrow">STOKLY V4 · OPERASIONAL KELAPA</p>
     <h1>Pekerjaan Hari Ini</h1><p>Selamat bekerja, {actor.name.split(" ")[0]}. Selesaikan pekerjaan tanpa mencari di banyak menu.</p>
     <div className="dashboard-hero-actions"><Link href="/orders">Buat order <ArrowRight size={16}/></Link>{actor.role!=="marketing"&&<Link href="/procurement">Terima kelapa <ArrowRight size={16}/></Link>}</div>
-   </div><div className="dashboard-hero-mark"><img src="/brand/kelapa-brand-hd.webp" alt="Logo asli Kelapa Branding Indonesia" width="180" height="200" loading="eager"/></div>
+   </div>
   </section>
   <div className="dashboard-section-header"><h2>Yang perlu ditangani</h2><p>Prioritas operasional · WITA (Palu)</p></div>
   <div className="metrics-grid">{steps.map(({name,value,detail,href,icon:Icon})=><Link href={href} className="metric" key={name} style={{display:"block",textDecoration:"none",color:"inherit"}}>

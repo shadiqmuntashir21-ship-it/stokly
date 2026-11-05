@@ -9,7 +9,7 @@
     "start": "next start",
     "check": "tsc --noEmit",
     "brand:build": "node scripts/generate-brand-assets.mjs",
-    "test": "node --import tsx --test tests/v4-business.test.ts",
+    "test": "node --import tsx --test tests/*.test.ts",
     "check:assets": "node scripts/verify-brand-assets.mjs"
   },
   "dependencies": {
