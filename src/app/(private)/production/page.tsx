@@ -24,6 +24,7 @@ export default async function Production({searchParams}:{searchParams:Promise<{s
  <div className="metrics-grid"><section className="metric"><div className="metric-label">Bahan lolos QC tersedia</div><strong>{available}</strong></section>
  <section className="metric"><div className="metric-label">Hasil jadi tercatat</div><strong>{daily.reduce((n,x)=>n+x.produced,0)}</strong></section>
  <section className="metric"><div className="metric-label">Rusak saat produksi</div><strong>{daily.reduce((n,x)=>n+x.damaged,0)}</strong></section></div>
+ <p className="form-hint">Harga jual tiap hasil produksi diatur melalui <Link href="/products">Produk & Stok</Link>. Biaya bahan baku mengikuti harga pembelian grade yang tercatat.</p>
  <Panel title="Catat hasil produksi"><GoProductionComposer products={categoryProducts} requestKey={randomUUID()} date={today()} available={available}/>
   {!available&&<p className="form-hint">Belum ada bahan baku lolos QC yang tersedia. <Link href="/procurement">Catat pembelian + QC terlebih dahulu.</Link></p>}
  </Panel>

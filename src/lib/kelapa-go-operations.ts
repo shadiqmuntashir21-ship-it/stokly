@@ -112,7 +112,7 @@ export async function addInventoryAsset(input:{name:string;quantity:number;note:
  await query("INSERT INTO inventory_assets(name,quantity,note) VALUES($1,$2,$3)",[input.name.trim(),input.quantity,input.note.trim()]);
 }
 export async function moveInventoryAsset(input:{id:string;date:string;kind:string;quantity:number;outletId:string;note:string},actor:string){
- if(!uuid(input.id)||!day(input.date)||!["IN","OUT","RETURN","LOST","DAMAGED","ADJUST"].includes(input.kind)||
+ if(!uuid(input.id)||!day(input.date)||!["IN","OUT","RETURN","LOST","DAMAGED"].includes(input.kind)||
  !count(input.quantity)||input.quantity===0||(input.outletId!==""&&!uuid(input.outletId))||input.note.length>400)
   throw new BusinessError("Pergerakan inventaris tidak valid.");
  await transaction(async c=>{
@@ -122,12 +122,21 @@ export async function moveInventoryAsset(input:{id:string;date:string;kind:strin
    "SELECT COALESCE(SUM(quantity) FILTER(WHERE kind='OUT'),0)::text out_total,COALESCE(SUM(quantity) FILTER(WHERE kind='RETURN'),0)::text returned,COALESCE(SUM(quantity) FILTER(WHERE kind='LOST'),0)::text lost,COALESCE(SUM(quantity) FILTER(WHERE kind='DAMAGED'),0)::text damaged FROM inventory_asset_movements WHERE asset_id=$1",
    [input.id]);
   const pending=Number(events.rows[0].out_total)-Number(events.rows[0].returned);
-  if(input.kind==="RETURN"&&input.quantity>pending)throw new BusinessError("Jumlah kembali melebihi yang dipinjam.");
-  if(input.kind==="OUT"&&input.quantity>asset.rows[0].quantity-Number(events.rows[0].damaged)-pending)
-   throw new BusinessError("Stok inventaris tersedia tidak mencukupi.");
+  const available=asset.rows[0].quantity-Number(events.rows[0].damaged)-pending;
+  if((input.kind==="OUT"||input.kind==="RETURN")&&!input.outletId)
+   throw new BusinessError("Pilih outlet untuk peminjaman atau pengembalian.");
+  if(input.kind==="RETURN"){
+   const outlet=await c.query<{due:string}>(
+    "SELECT COALESCE(SUM(CASE WHEN kind='OUT' THEN quantity WHEN kind='RETURN' THEN -quantity ELSE 0 END),0)::text AS due FROM inventory_asset_movements WHERE asset_id=$1 AND outlet_id=$2",
+    [input.id,input.outletId]);
+   if(input.quantity>Number(outlet.rows[0].due))
+    throw new BusinessError("Jumlah pengembalian melebihi pinjaman outlet ini.");
+  }
+  if(["OUT","DAMAGED","LOST"].includes(input.kind)&&input.quantity>available)
+   throw new BusinessError("Persediaan inventaris tersedia tidak mencukupi.");
   await c.query("INSERT INTO inventory_asset_movements(asset_id,movement_date,kind,quantity,outlet_id,note,created_by) VALUES($1,$2,$3,$4,$5,$6,$7)",
    [input.id,input.date,input.kind,input.quantity,input.outletId||null,input.note.slice(0,400),actor]);
   if(input.kind==="IN")await c.query("UPDATE inventory_assets SET quantity=quantity+$2 WHERE id=$1",[input.id,input.quantity]);
-  if(input.kind==="LOST")await c.query("UPDATE inventory_assets SET quantity=GREATEST(0,quantity-$2) WHERE id=$1",[input.id,input.quantity]);
+  if(input.kind==="LOST")await c.query("UPDATE inventory_assets SET quantity=quantity-$2 WHERE id=$1",[input.id,input.quantity]);
  });
 }

@@ -22,6 +22,16 @@ export async function reconcileLegacyReceipt(input:{orderId:string;mode:"physica
    "SELECT document_number,status FROM customer_orders WHERE id=$1 FOR UPDATE",[input.orderId]);
   if(!r.rows[0])throw new BusinessError("Order tidak ditemukan.");
   if(r.rows[0].document_number)throw new BusinessError("Order ini sudah memiliki nomor. Nomor tidak dapat diganti.");
+  const shipped=await c.query<{id:string;document_number:string}>(
+   "SELECT id::text,document_number FROM delivery_notes WHERE order_id=$1 ORDER BY created_at ASC FOR UPDATE",[input.orderId]);
+  if(!shipped.rowCount)throw new BusinessError("Nomor diterbitkan saat pengiriman. Kirim order terlebih dahulu.");
+  if(shipped.rowCount!==1)throw new BusinessError("Order memiliki beberapa pengiriman. Gunakan daftar Nota per Pengiriman.");
+  if(input.mode==="physical_existing"){
+   const matches=await c.query(
+    "SELECT document_number FROM receipt_register WHERE document_number=$1 UNION ALL SELECT document_number FROM legacy_receipts WHERE document_number=$1 UNION ALL SELECT document_number FROM legacy_void_receipts WHERE document_number=$1 LIMIT 1",
+    [input.physicalNumber]);
+   if(matches.rowCount)throw new BusinessError("Nomor fisik sudah digunakan atau rusak dan tidak boleh diterbitkan kembali.");
+  }
   if(r.rows[0].status==="cancelled"&&input.mode==="new_sequence")
    throw new BusinessError("Order yang sudah dibatalkan tidak dapat memperoleh nomor baru.");
   const number=input.mode==="new_sequence"?
@@ -32,6 +42,9 @@ export async function reconcileLegacyReceipt(input:{orderId:string;mode:"physica
    "UPDATE customer_orders SET document_number=$2,receipt_number_pending=false WHERE id=$1 AND document_number IS NULL RETURNING id::text",
    [input.orderId,number]);
   if(!assigned.rowCount)throw new BusinessError("Nomor order berubah. Muat ulang.");
+  await c.query("UPDATE delivery_notes SET document_number=$2 WHERE id=$1",[shipped.rows[0].id,number]);
+  await c.query("INSERT INTO receipt_register(document_number,status,delivery_id,actor_id,note) VALUES($1,'ISSUED',$2,$3,$4)",
+   [number,shipped.rows[0].id,actor,"Penomoran pengiriman lama: "+input.reason.trim().slice(0,240)]);
   await c.query(
    "INSERT INTO receipt_number_reconciliations(order_id,document_number,method,note,actor_id) VALUES($1,$2,$3,$4,$5)",
    [input.orderId,number,input.mode,input.reason.trim(),actor]);

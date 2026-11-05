@@ -5,13 +5,13 @@ import {SubmitButton} from "@/components/submit-button";
 import {newAssetAction,assetMovementAction} from "../go-actions";
 export const dynamic="force-dynamic";
 const today=()=>new Intl.DateTimeFormat("sv-SE",{timeZone:"Asia/Makassar",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
-type Asset={id:string;name:string;quantity:number;unit_price:string|null;total_cost:string|null;loaned:number};
+type Asset={id:string;name:string;quantity:number;unit_price:string|null;total_cost:string|null;loaned:number;damaged:number};
 type Movement={movement_date:string;kind:string;quantity:number;asset:string;outlet:string|null};
 type Basket={source_row:number;basket_type:string|null;outlet_name:string|null;quantity:number|null;reported_balance:number|null;note:string|null};
 export default async function Inventory({searchParams}:{searchParams:Promise<{success?:string;error?:string}>}){
  await requireActor(["owner","admin"]);
  const [assets,moves,old,outlets,p]=await Promise.all([
-  query<Asset>("SELECT a.id::text,a.name,a.quantity,a.unit_price::text,a.total_cost::text,COALESCE((SELECT SUM(CASE WHEN kind='OUT' THEN quantity WHEN kind='RETURN' THEN -quantity ELSE 0 END) FROM inventory_asset_movements m WHERE m.asset_id=a.id),0)::int loaned FROM inventory_assets a ORDER BY a.name LIMIT 300"),
+  query<Asset>("SELECT a.id::text,a.name,a.quantity,a.unit_price::text,a.total_cost::text,COALESCE((SELECT SUM(CASE WHEN kind='OUT' THEN quantity WHEN kind='RETURN' THEN -quantity ELSE 0 END) FROM inventory_asset_movements m WHERE m.asset_id=a.id),0)::int loaned,COALESCE((SELECT SUM(quantity) FROM inventory_asset_movements m WHERE m.asset_id=a.id AND kind='DAMAGED'),0)::int damaged FROM inventory_assets a ORDER BY a.name LIMIT 300"),
   query<Movement>("SELECT m.movement_date::text,m.kind,m.quantity,a.name asset,o.name outlet FROM inventory_asset_movements m JOIN inventory_assets a ON a.id=m.asset_id LEFT JOIN outlets o ON o.id=m.outlet_id ORDER BY m.created_at DESC LIMIT 100"),
   query<Basket>("SELECT source_row,basket_type,outlet_name,quantity,reported_balance,note FROM legacy_basket_movements ORDER BY source_row LIMIT 100"),
   query<{id:string;name:string}>("SELECT id::text,name FROM outlets WHERE active=true ORDER BY name LIMIT 300"),
@@ -28,14 +28,14 @@ export default async function Inventory({searchParams}:{searchParams:Promise<{su
  <Panel title="Catat pergerakan aset dan keranjang"><form action={assetMovementAction} className="form-grid">
   <label className="wide">Barang<select name="assetId" defaultValue="" required><option value="" disabled>Pilih aset</option>{assets.map(x=><option key={x.id} value={x.id}>{x.name} · total {x.quantity} · dipinjam {x.loaned}</option>)}</select></label>
   <label>Tanggal<input name="date" type="date" required defaultValue={today()}/></label>
-  <label>Jenis<select name="kind" defaultValue="OUT"><option value="OUT">Dipinjamkan ke outlet</option><option value="RETURN">Dikembalikan</option><option value="IN">Penambahan aset</option><option value="DAMAGED">Rusak</option><option value="LOST">Hilang</option><option value="ADJUST">Penyesuaian/cek fisik</option></select></label>
+  <label>Jenis<select name="kind" defaultValue="OUT"><option value="OUT">Dipinjamkan ke outlet</option><option value="RETURN">Dikembalikan</option><option value="IN">Penambahan aset</option><option value="DAMAGED">Rusak</option><option value="LOST">Hilang</option></select></label>
   <label>Jumlah<input name="quantity" type="number" min="1" step="1" required/></label>
   <label>Outlet (bila relevan)<select name="outletId" defaultValue=""><option value="">Tidak terkait outlet</option>{outlets.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
   <label className="wide">Keterangan<input name="note" maxLength={400}/></label>
   <SubmitButton className="primary-button">Catat Pergerakan</SubmitButton>
  </form></Panel>
- <Panel title="Daftar inventaris"><div className="table-wrap"><table><thead><tr><th>Barang</th><th>Dimiliki</th><th>Dipinjam</th><th>Tersedia (perkiraan)</th><th>Nilai historis</th></tr></thead><tbody>
- {assets.map(x=><tr key={x.id}><td>{x.name}</td><td>{x.quantity}</td><td>{x.loaned}</td><td>{Math.max(0,x.quantity-x.loaned)}</td><td>{rupiah(x.total_cost??0)}</td></tr>)}</tbody></table></div></Panel>
+ <Panel title="Daftar inventaris"><div className="table-wrap"><table><thead><tr><th>Barang</th><th>Dimiliki</th><th>Dipinjam</th><th>Rusak</th><th>Tersedia (perkiraan)</th><th>Nilai historis</th></tr></thead><tbody>
+ {assets.map(x=><tr key={x.id}><td>{x.name}</td><td>{x.quantity}</td><td>{x.loaned}</td><td>{x.damaged}</td><td>{Math.max(0,x.quantity-x.loaned-x.damaged)}</td><td>{rupiah(x.total_cost??0)}</td></tr>)}</tbody></table></div></Panel>
  <Panel title="Riwayat peminjaman / pengembalian"><div className="table-wrap"><table><thead><tr><th>Tanggal</th><th>Barang</th><th>Jenis</th><th>Jumlah</th><th>Outlet</th></tr></thead><tbody>
  {moves.map((x,i)=><tr key={i}><td>{x.movement_date}</td><td>{x.asset}</td><td>{x.kind}</td><td>{x.quantity}</td><td>{x.outlet||"—"}</td></tr>)}</tbody></table></div></Panel>
  <Panel title="Riwayat Keranjang KELAPA GO (referensi)"><div className="table-wrap"><table><thead><tr><th>Jenis</th><th>Outlet</th><th>Jumlah</th><th>Saldo tertulis</th><th>Catatan</th></tr></thead><tbody>

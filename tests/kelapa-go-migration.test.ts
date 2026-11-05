@@ -48,3 +48,26 @@ test("Owner historical and cash pages are protected",async()=>{
  const pages=["src/app/(private)/owner/legacy/page.tsx","src/app/(private)/cash/page.tsx","src/app/(private)/inventory/page.tsx","src/app/(private)/invoices/legacy/page.tsx"];
  for(const file of pages){const c=await read(file);assert.match(c,/await require(Owner|Actor)\(/);}
 });
+
+test("Receipt activation cannot pre-number undelivered orders",async()=>{
+ const setup=await read("src/lib/receipt-setup.ts");
+ assert.match(setup,/Seri nomor sudah aktif/);
+ assert.doesNotMatch(setup,/UPDATE customer_orders SET document_number=allocate_stokly_receipt_number/);
+ const reconcile=await read("src/lib/receipt-reconciliation.ts");
+ assert.match(reconcile,/Kirim order terlebih dahulu/);
+ assert.match(reconcile,/receipt_register/);
+});
+test("Inventory is aware of damaged and outlet-specific borrowed units",async()=>{
+ const source=await read("src/lib/kelapa-go-operations.ts");
+ const page=await read("src/app/(private)/inventory/page.tsx");
+ assert.match(source,/outlet_id=\$2/);
+ assert.match(source,/const available=asset.rows\[0\].quantity/);
+ assert.match(page,/kind='DAMAGED'/);
+});
+test("Derived daily pivot reports remain read-only SQL views",async()=>{
+ const sql=await read("database/025_kelapa_go_dynamic_reports.sql");
+ for(const view of ["v_go_sales_daily","v_go_outlet_daily","v_go_cash_category_live","v_go_kasbon"])
+  assert.match(sql,new RegExp(view));
+ assert.match(sql,/FROM legacy_receipts/);
+ assert.doesNotMatch(sql,/INSERT INTO customer_orders|INSERT INTO delivery_notes/);
+});

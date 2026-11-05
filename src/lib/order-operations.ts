@@ -40,7 +40,7 @@ export async function createOrder(data:{requestKey:string;outletId:string;items:
   const priced=data.items.map(i=>{
    const master=Number(products.rows.find(p=>p.id===i.productId)!.price);
    const price=i.unitPrice===null?master:i.unitPrice;
-   if(!validPrice(master)||!validPrice(price))throw new BusinessError("Harga produk tidak valid.");
+   if(!validPrice(master)||!validPrice(price)||price<=0)throw new BusinessError("Harga jual belum tersedia atau tidak valid. Atur harga produk sebelum membuat order.");
    const changed=cents(master)!==cents(price);
    if(changed&&!allowOverride)throw new BusinessError("Hanya Owner/Admin boleh mengubah harga transaksi.");
    if(changed&&data.priceReason.trim().length<5)throw new BusinessError("Tulis alasan perubahan harga transaksi (minimal 5 karakter).");

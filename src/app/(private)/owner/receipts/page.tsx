@@ -26,6 +26,7 @@ export default async function ReceiptReconciliation({searchParams}:{searchParams
     <details className="edit-detail" key={x.id}>
      <summary>{x.outlet} · {x.ordered_on} · {x.status.replaceAll("_"," ")} · {x.deliveries} pengiriman</summary>
      <div style={{padding:12}}><Link href={"/orders/"+x.id}>Lihat detail order</Link>
+      {x.deliveries===0?<p className="form-hint">Nota terbit otomatis ketika order ini dikirim. Tidak perlu menetapkan nomor sekarang.</p>:
       <form action={reconcileReceiptAction} className="form-grid">
        <input name="orderId" type="hidden" value={x.id}/>
        <label>Metode penomoran<select name="mode" defaultValue="new_sequence">
@@ -36,7 +37,7 @@ export default async function ReceiptReconciliation({searchParams}:{searchParams
        <label className="wide">Alasan / referensi verifikasi<input name="reason" required minLength={8} maxLength={400} placeholder="Contoh: Sudah dicek pada buku kwitansi outlet"/></label>
        <label className="wide"><input type="checkbox" name="verified" value="yes" required/> Saya sudah mengecek buku fisik dan memastikan tidak ada nomor ganda.</label>
        <SubmitButton className="primary-button">Tetapkan Nomor Permanen</SubmitButton>
-      </form>
+      </form>}
      </div>
     </details>)}</div>}
   </Panel>

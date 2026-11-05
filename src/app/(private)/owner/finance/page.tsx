@@ -21,7 +21,6 @@ export default async function OwnerFinance({searchParams}:{searchParams:Promise<
    <section className="metric"><div className="metric-label">Uang diterima pada periode</div><strong>{rupiah(m.payments)}</strong></section>
    <section className="metric"><div className="metric-label">Piutang belum lunas (semua waktu)</div><strong>{rupiah(m.outstanding)}</strong></section>
    <section className="metric"><div className="metric-label">Biaya operasional tercatat</div><strong>{rupiah(m.expenses)}</strong></section>
-   <section className="metric"><div className="metric-label">Biaya rute tercatat (terpisah)</div><strong>{rupiah(m.route_costs)}</strong></section>
    <section className="metric"><div className="metric-label">Refund belum dibayarkan</div><strong>{rupiah(m.refunds)}</strong></section>
   </div>
   <Panel title="HPP produksi per produk" detail={cost.finished_runs+" proses selesai alokasi dari "+cost.production_runs}>
@@ -38,7 +37,7 @@ export default async function OwnerFinance({searchParams}:{searchParams:Promise<
   </Panel>
   <Panel title="Biaya menurut klasifikasi">
    <div className="table-wrap"><table><thead><tr><th>Jenis biaya</th><th>Nominal periode</th></tr></thead><tbody>{expenses.map(x=><tr key={x.cost_class}><td>{x.cost_class}</td><td>{rupiah(x.amount)}</td></tr>)}</tbody></table></div>
-   <p className="form-hint">Biaya produksi yang sudah dialokasikan tidak boleh dikurangkan lagi sebagai biaya operasional saat menghitung laba. Biaya rute juga ditampilkan terpisah untuk menghindari perhitungan ganda.</p>
+   <p className="form-hint">Biaya produksi yang sudah dialokasikan tidak boleh dikurangkan lagi sebagai biaya operasional saat menghitung laba. Biaya BBM dan transportasi baru dicatat lewat Kas Kecil; data biaya historis tetap tersimpan sebagai arsip.</p>
   </Panel>
   <Panel title="Kelola keuangan"><div className="quick-links">
    <Link href="/expenses">Catat & lihat biaya operasional →</Link>
