@@ -71,7 +71,7 @@ export function Shell({actor,children}:{actor:Actor;children:React.ReactNode}){
      </Link>)}
     </div>)}
     <div className="nav-group"><button type="button" className="logout-button" onClick={()=>setLegacyOpen(x=>!x)} aria-expanded={legacyOpen}>{legacyOpen?"Tutup menu lama":"Lihat menu arsip/lama"}</button>{oldItems.map(({href,label,icon:Icon})=><Link className="nav-link" key={href} href={href} onClick={()=>setOpen(false)}><Icon size={18}/><span className="nav-text">{label}</span></Link>)}</div>
-    {!visible.length&&!oldItems.length&&<p className="nav-empty">Fitur tidak ditemukan.</p>
+    {!visible.length&&!oldItems.length&&<p className="nav-empty">Fitur tidak ditemukan.</p>}
    </nav>
    <div className="sidebar-bottom"><div className="user-info"><span className="avatar">{actor.name.charAt(0).toUpperCase()}</span><span><b>{actor.name}</b><small>{actor.role==="owner"?"Owner · Akses penuh":actor.role==="admin"?"Admin operasional":"Tim marketing"}</small></span></div>
     <button className="logout-button" onClick={signOut}><LogOut size={17}/>{actor.role==="owner"?"Kunci Room Owner":"Ganti Room"}<ChevronRight size={14}/></button></div>
