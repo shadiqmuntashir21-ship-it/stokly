@@ -34,6 +34,29 @@ const groups:{title:string;items:NavItem[]}[]=[
   {href:"/settings/security",label:"Ganti PIN Owner",icon:KeyRound,roles:["owner"]},
   {href:"/settings/receipts",label:"Nomor Kwitansi",icon:FileText,roles:["owner"]}]}
 ];
+const ownerGroups:{title:string;items:NavItem[]}[]=[
+ {title:"Pusat Kendali",items:[
+  {href:"/owner",label:"Beranda Bisnis",icon:LayoutDashboard,roles:["owner"]},
+  {href:"/owner/operations",label:"Monitoring Operasional",icon:ClipboardCheck,roles:["owner"]}]},
+ {title:"Analisis & Keuangan",items:[
+  {href:"/owner/outlets",label:"Penjualan & 50 Outlet",icon:Truck,roles:["owner"]},
+  {href:"/owner/finance",label:"Keuangan & HPP",icon:Calculator,roles:["owner"]},
+  {href:"/reports",label:"Laporan Terpadu",icon:ChartColumn,roles:["owner"]},
+  {href:"/closeout",label:"Tutup Buku Harian",icon:ClipboardList,roles:["owner"]}]},
+ {title:"Kontrol & Pengaturan",items:[
+  {href:"/owner/receipts",label:"Kwitansi Lama",icon:FileText,roles:["owner"]},
+  {href:"/owner/archive",label:"Arsip Tahunan",icon:Package,roles:["owner"]},
+  {href:"/owner/settings",label:"Pengaturan Bisnis",icon:KeyRound,roles:["owner"]},
+  {href:"/search",label:"Cari Semua Data",icon:Search,roles:["owner"]}]},
+ {title:"Buka Operasional",items:[
+  {href:"/orders",label:"Order & Pengiriman",icon:ShoppingCart,roles:["owner"]},
+  {href:"/invoices",label:"Kwitansi & Pembayaran",icon:WalletCards,roles:["owner"]},
+  {href:"/procurement",label:"Pembelian Kelapa",icon:Sprout,roles:["owner"]},
+  {href:"/qc",label:"QC & Afkir",icon:ClipboardCheck,roles:["owner"]},
+  {href:"/production",label:"Produksi & Stok",icon:Factory,roles:["owner"]},
+  {href:"/costing",label:"Alokasi HPP",icon:Calculator,roles:["owner"]},
+  {href:"/expenses",label:"Pengeluaran",icon:WalletCards,roles:["owner"]}]}
+];
 const legacyItems:NavItem[]=[
  {href:"/receipts",label:"Barang Masuk Manual (Lama)",icon:PackagePlus,roles:["owner","admin"]},
  {href:"/issues",label:"Barang Keluar Nonjual",icon:PackagePlus,roles:["owner","admin"]},
@@ -41,6 +64,7 @@ const legacyItems:NavItem[]=[
  {href:"/returns",label:"Retur Kasir Lama",icon:RotateCcw,roles:["owner","admin"]}
 ];
 const mobileHrefs=["/dashboard","/products","/orders","/outlets"];
+const ownerMobileHrefs=["/owner","/owner/finance","/owner/outlets","/owner/settings"];
 function NavFeedback(){
  const {pending}=useLinkStatus();
  return <span className={"nav-feedback "+(pending?"nav-feedback-pending":"")} aria-hidden="true"/>;
@@ -52,16 +76,17 @@ export function Shell({actor,children}:{actor:Actor;children:React.ReactNode}){
  const [legacyOpen,setLegacyOpen]=useState(false);
  const [online,setOnline]=useState(true);
  useEffect(()=>{const update=()=>setOnline(navigator.onLine);update();window.addEventListener("online",update);window.addEventListener("offline",update);return ()=>{window.removeEventListener("online",update);window.removeEventListener("offline",update)};},[]);
- const visible=groups.map(g=>({...g,items:g.items.filter(x=>x.roles.includes(actor.role)&&x.label.toLowerCase().includes(search.toLowerCase()))})).filter(g=>g.items.length);
+ const navGroups=actor.role==="owner"?ownerGroups:groups;
+ const visible=navGroups.map(g=>({...g,items:g.items.filter(x=>x.roles.includes(actor.role)&&x.label.toLowerCase().includes(search.toLowerCase()))})).filter(g=>g.items.length);
  const oldItems=legacyItems.filter(x=>x.roles.includes(actor.role)&&(legacyOpen||!!search)&&x.label.toLowerCase().includes(search.toLowerCase()));
- const mobile=groups.flatMap(g=>g.items).filter(x=>mobileHrefs.includes(x.href)&&x.roles.includes(actor.role));
+ const mobile=navGroups.flatMap(g=>g.items).filter(x=>(actor.role==="owner"?ownerMobileHrefs:mobileHrefs).includes(x.href)&&x.roles.includes(actor.role));
  async function signOut(){
   if(actor.role==="owner")await authClient.signOut();
   window.location.assign("/rooms");
  }
  return <div className="app-shell">
   <aside className={"sidebar "+(open?"sidebar-open":"")} aria-label="Menu utama">
-   <div className="sidebar-top"><Link href="/dashboard" onClick={()=>setOpen(false)}><BrandLockup compact inverse/></Link><button className="mobile-close" aria-label="Tutup menu" onClick={()=>setOpen(false)}><X size={20}/></button></div>
+   <div className="sidebar-top"><Link href={actor.role==="owner"?"/owner":"/dashboard"} onClick={()=>setOpen(false)}><BrandLockup compact inverse/></Link><button className="mobile-close" aria-label="Tutup menu" onClick={()=>setOpen(false)}><X size={20}/></button></div>
    <div className="sidebar-search"><Search size={17}/><input type="search" aria-label="Cari fitur" placeholder="Cari fitur..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
    <nav className="side-nav" aria-label="Navigasi utama">
     {visible.map(group=><div className="nav-group" key={group.title}>
@@ -80,7 +105,7 @@ export function Shell({actor,children}:{actor:Actor;children:React.ReactNode}){
   <div className="main-area">
    <header className="topbar">
     <div className="topbar-start"><button className="menu-button" aria-label="Buka menu" onClick={()=>setOpen(true)}><Menu size={22}/></button>
-     <span className="topbar-section">WORKSPACE <ChevronRight size={12}/> <strong>{groups.flatMap(g=>g.items).find(x=>x.href===pathname)?.label||"STOKLY"}</strong></span></div>
+     <span className="topbar-section">WORKSPACE <ChevronRight size={12}/> <strong>{navGroups.flatMap(g=>g.items).find(x=>x.href===pathname)?.label||"STOKLY"}</strong></span></div>
     <div className="topbar-right"><Link href="/search" aria-label="Cari transaksi, produk, outlet" title="Cari semua data"><Search size={18}/></Link><span className={"live-pill "+(!online?"status-danger":"")}><Wifi size={14}/> {online?"Online":"Offline"}</span><span className="room-pill">{actor.role==="owner"?"OWNER":actor.role==="admin"?"ADMIN":"MARKETING"}</span><span className="top-avatar">{actor.name.charAt(0).toUpperCase()}</span></div>
    </header>
    <main className="content" id="main-content">{children}</main>
@@ -88,7 +113,7 @@ export function Shell({actor,children}:{actor:Actor;children:React.ReactNode}){
   </div>
   <nav className="bottom-nav" aria-label="Navigasi cepat mobile">
    {mobile.map(({href,label,icon:Icon})=><Link key={href} href={href} aria-current={pathname===href?"page":undefined} className={pathname===href?"active":""}>
-    <Icon size={19}/><span>{href==="/products"?"Produk":href==="/orders"?"Order":href==="/dashboard"?"Beranda":"Outlet"}</span><NavFeedback/>
+    <Icon size={19}/><span>{href==="/owner/finance"?"Keuangan":href==="/owner/settings"?"Pengaturan":href==="/owner/outlets"?"Outlet":href==="/owner"?"Beranda":href==="/products"?"Produk":href==="/orders"?"Order":href==="/dashboard"?"Beranda":"Outlet"}</span><NavFeedback/>
    </Link>)}
    <button type="button" className="bottom-more" onClick={()=>setOpen(true)}><Menu size={20}/><span>Menu</span></button>
   </nav>

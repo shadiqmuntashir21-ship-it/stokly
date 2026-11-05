@@ -1,4 +1,5 @@
 import Link from "next/link";
+import {redirect} from "next/navigation";
 import {ArrowRight,ShoppingCart,Package,ClipboardCheck,Truck,Wallet,AlertTriangle,Factory,RotateCcw} from "lucide-react";
 import {requireActor} from "@/lib/access";
 import {listProducts} from "@/lib/operations";
@@ -7,6 +8,7 @@ import {Panel,rupiah} from "@/components/ui";
 export const dynamic="force-dynamic";
 export default async function Dashboard(){
  const actor=await requireActor();
+ if(actor.role==="owner")redirect("/owner");
  const [products,orders,qc,production,complaints,financial]=await Promise.all([
   listProducts(),
   query<{today:number;pending:number;partial:number}>("SELECT COUNT(*) FILTER(WHERE ordered_on=(now() AT TIME ZONE 'Asia/Makassar')::date)::int AS today,COUNT(*) FILTER(WHERE status='confirmed')::int AS pending,COUNT(*) FILTER(WHERE status='partially_delivered')::int AS partial FROM customer_orders WHERE status!='cancelled'"),

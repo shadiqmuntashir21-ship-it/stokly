@@ -16,6 +16,7 @@ export default async function OrderDetail({params,searchParams}:{params:Promise<
  const due=ledger?invoiceBalance(ledger.gross,ledger.credit,ledger.paid).due:0;
  return <><PageHead eyebrow="TRANSAKSI / DETAIL" title={"Order "+(order.document_number||"Belum bernomor")} description={order.outlet+" · "+order.status.replaceAll("_"," ")}/><Notice success={flags.success} error={flags.error}/>
  <p><Link href="/orders">← Kembali ke order</Link> · <Link href={"/orders?repeat="+id}>Salin sebagai order baru</Link></p>
+ {actor.role==="owner"&&!order.document_number&&<p className="form-hint">Order lama belum mempunyai nomor kwitansi. <Link href="/owner/receipts">Tetapkan nomor melalui Room Owner →</Link></p>}
  <Panel title="Rincian barang"><div className="table-wrap"><table><thead><tr><th>Produk</th><th>Dipesan</th><th>Terkirim</th><th>Harga/unit</th><th>Subtotal</th></tr></thead><tbody>
  {order.items.map(x=><tr key={x.id}><td>{x.name}</td><td>{x.quantity}</td><td>{x.shipped}</td><td>{rupiah(x.unit_price)}</td><td>{rupiah(Number(x.unit_price)*x.quantity)}</td></tr>)}
  </tbody></table></div>
