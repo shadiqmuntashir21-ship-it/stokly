@@ -1,4 +1,4 @@
-const CACHE="stokly-shell-v3";
+const CACHE="stokly-shell-v4";
 const OFFLINE=["/offline.html","/icons/icon.svg","/icons/icon-192.png","/icons/icon-512.png"];
 self.addEventListener("install",event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(OFFLINE)))});
 self.addEventListener("activate",event=>{event.waitUntil(Promise.all([caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))),self.clients.claim()]))});
@@ -10,6 +10,9 @@ self.addEventListener("fetch",event=>{
  if(event.request.mode==="navigate"){
    event.respondWith(fetch(event.request).catch(()=>caches.match("/offline.html")));
  }else if(url.pathname.startsWith("/icons/")){
-   event.respondWith(caches.match(event.request).then(cached=>cached||fetch(event.request)));
+   event.respondWith(fetch(event.request).then(async response=>{
+    if(response.ok){const cache=await caches.open(CACHE);await cache.put(event.request,response.clone());}
+    return response;
+   }).catch(()=>caches.match(event.request)));
  }
 });

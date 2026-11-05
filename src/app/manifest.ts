@@ -6,9 +6,9 @@ export default function manifest(): MetadataRoute.Manifest {
   start_url:"/rooms",scope:"/",display:"standalone",
   background_color:"#f6f8f7",theme_color:"#123e3a",lang:"id",
   icons:[
-   {src:"/icons/icon.svg",sizes:"any",type:"image/svg+xml",purpose:"any"},
-   {src:"/icons/icon-192.png",sizes:"192x192",type:"image/png",purpose:"maskable"},
-   {src:"/icons/icon-512.png",sizes:"512x512",type:"image/png",purpose:"maskable"}
+   {src:"/icons/icon.svg?v=4",sizes:"any",type:"image/svg+xml",purpose:"any"},
+   {src:"/icons/icon-192.png?v=4",sizes:"192x192",type:"image/png",purpose:"maskable"},
+   {src:"/icons/icon-512.png?v=4",sizes:"512x512",type:"image/png",purpose:"maskable"}
   ]
  };
 }
