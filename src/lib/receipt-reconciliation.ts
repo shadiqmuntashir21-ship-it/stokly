@@ -15,13 +15,15 @@ export async function reconcileLegacyReceipt(input:{orderId:string;mode:"physica
  if(!isUuid(input.orderId)||!["physical_existing","new_sequence"].includes(input.mode)||
  !input.verified||input.reason.trim().length<8||input.reason.length>400)
   throw new BusinessError("Isi alasan dan konfirmasi bahwa nomor sudah dicek pada buku fisik.");
- if(input.mode==="physical_existing"&&(!/^[0-9]{7}$/.test(input.physicalNumber)||Number(input.physicalNumber)>=9000000))
+ if(input.mode==="physical_existing"&&(!/^[0-9]{7}$/.test(input.physicalNumber)||Number(input.physicalNumber)>=9000000||Number(input.physicalNumber)===0))
   throw new BusinessError("Nomor kwitansi fisik lama harus 7 digit dari seri sebelum 9000000.");
  return transaction(async c=>{
   const r=await c.query<{document_number:string|null;status:string}>(
    "SELECT document_number,status FROM customer_orders WHERE id=$1 FOR UPDATE",[input.orderId]);
   if(!r.rows[0])throw new BusinessError("Order tidak ditemukan.");
   if(r.rows[0].document_number)throw new BusinessError("Order ini sudah memiliki nomor. Nomor tidak dapat diganti.");
+  if(r.rows[0].status==="cancelled"&&input.mode==="new_sequence")
+   throw new BusinessError("Order yang sudah dibatalkan tidak dapat memperoleh nomor baru.");
   const number=input.mode==="new_sequence"?
    (await c.query<{number:string|null}>("SELECT allocate_stokly_receipt_number() AS number")).rows[0]?.number:
    input.physicalNumber;
