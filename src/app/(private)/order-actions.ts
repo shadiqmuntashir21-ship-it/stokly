@@ -1,7 +1,7 @@
 "use server";
 import {safeWrite} from "@/lib/safe-action";
 import {requireActor} from "@/lib/access";
-import {createOrder,dispatchOrder,payOrder,updatePhysicalReceipt} from "@/lib/order-operations";
+import {createOrder,dispatchOrder,payOrder,updatePhysicalReceipt,updateOrderDraft,cancelOrderDraft} from "@/lib/order-operations";
 import {revalidatePath} from "next/cache";
 import {redirect} from "next/navigation";
 const s=(f:FormData,k:string)=>String(f.get(k)||"");
@@ -33,4 +33,19 @@ export async function physicalReceiptAction(f:FormData){
  const actor=await requireActor(["owner","admin"]);
  await safeWrite("/invoices",()=>updatePhysicalReceipt({orderId:s(f,"orderId"),type:s(f,"type"),status:s(f,"status")},actor.id));
  revalidatePath("/invoices");redirect("/invoices?success=1");
+}
+
+export async function editDraftAction(f:FormData){
+ const actor=await requireActor(["owner","admin"]);
+ const id=s(f,"orderId");
+ const ids=s(f,"itemIds").split(",").filter(Boolean);
+ const items=ids.map(id=>({id,quantity:Number(f.get("qty_"+id))}));
+ await safeWrite("/orders/"+id,()=>updateOrderDraft({id,items,date:s(f,"deliveryDate"),note:s(f,"note"),reason:s(f,"reason")},actor.id));
+ revalidatePath("/orders");revalidatePath("/orders/"+id);redirect("/orders/"+id+"?success=1");
+}
+export async function cancelDraftAction(f:FormData){
+ const actor=await requireActor(["owner","admin"]);
+ const id=s(f,"orderId");
+ await safeWrite("/orders/"+id,()=>cancelOrderDraft(id,s(f,"reason"),actor.id));
+ revalidatePath("/orders");revalidatePath("/orders/"+id);redirect("/orders/"+id+"?success=1");
 }

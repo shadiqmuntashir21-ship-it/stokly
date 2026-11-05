@@ -30,6 +30,7 @@ const groups:{title:string;items:NavItem[]}[]=[
  {title:"Pengaturan & Lainnya",items:[
   {href:"/suppliers",label:"Supplier & Petani",icon:Sprout,roles:["owner","admin"]},
   {href:"/visits",label:"Kunjungan Marketing",icon:CalendarDays,roles:["owner","admin","marketing"]},
+  {href:"/settings/devices",label:"Perangkat Staf",icon:KeyRound,roles:["owner"]},
   {href:"/settings/security",label:"Ganti PIN Owner",icon:KeyRound,roles:["owner"]},
   {href:"/settings/receipts",label:"Nomor Kwitansi",icon:FileText,roles:["owner"]}]}
 ];

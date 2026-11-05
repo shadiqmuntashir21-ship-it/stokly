@@ -46,7 +46,7 @@ export async function createOrder(data:{requestKey:string;outletId:string;items:
    if(changed&&data.priceReason.trim().length<5)throw new BusinessError("Tulis alasan perubahan harga transaksi (minimal 5 karakter).");
    return {...i,price,master,changed};
   });
-  const order=await c.query<{id:string;document_number:string|null}>("INSERT INTO customer_orders(request_key,outlet_id,desired_delivery,note,created_by,receipt_number_pending) VALUES($1,$2,$3,$4,$5,true) RETURNING id::text,document_number",[data.requestKey,data.outletId,data.deliveryDate||null,data.note.trim().slice(0,400),actor]);
+  const order=await c.query<{id:string;document_number:string|null}>("INSERT INTO customer_orders(request_key,outlet_id,desired_delivery,note,created_by,receipt_number_pending,ordered_on) VALUES($1,$2,$3,$4,$5,true,(now() AT TIME ZONE 'Asia/Makassar')::date) RETURNING id::text,document_number",[data.requestKey,data.outletId,data.deliveryDate||null,data.note.trim().slice(0,400),actor]);
   if(order.rows[0].document_number)await c.query("UPDATE customer_orders SET receipt_number_pending=false WHERE id=$1",[order.rows[0].id]);
   for(const item of priced){
    const added=await c.query<{id:string}>("INSERT INTO customer_order_items(order_id,product_id,quantity,unit_price) VALUES($1,$2,$3,$4) RETURNING id::text",[order.rows[0].id,item.productId,item.quantity,item.price]);
@@ -109,9 +109,14 @@ export async function dispatchOrder(data:{requestKey:string;orderId:string;items
 }
 
 export type ReceiptRow={id:string;document_number:string|null;outlet:string;group_name:string;ordered_on:string;status:string;ordered_pcs:number;pcs:number;ordered_total:string;gross:string;credit:string;paid:string;payment_method:string|null;paid_at:string|null;physical_receipt_type:string;physical_receipt_status:string;deliveries:number};
-export async function listInvoices(){
+export async function listInvoices(options:{orderId?:string;limit?:number;offset?:number;search?:string}={}){
+ const id=options.orderId&&uuid(options.orderId)?options.orderId:null;
+ const search=(options.search||"").trim().slice(0,120)||null;
+ const limit=Math.max(1,Math.min(500,options.limit??100));
+ const offset=Math.max(0,Math.min(10000000,options.offset??0));
  return query<ReceiptRow>(
-  "SELECT o.id::text,o.document_number,t.name AS outlet,COALESCE(g.name,'—') AS group_name,o.ordered_on::text,o.status,o.physical_receipt_type,o.physical_receipt_status,COALESCE((SELECT SUM(i.quantity)::int FROM customer_order_items i WHERE i.order_id=o.id),0)::int AS ordered_pcs,COALESCE((SELECT SUM(di.quantity)::int FROM delivery_notes d JOIN delivery_note_items di ON di.delivery_id=d.id WHERE d.order_id=o.id),0)::int AS pcs,COALESCE((SELECT SUM(i.quantity*i.unit_price) FROM customer_order_items i WHERE i.order_id=o.id),0)::text AS ordered_total,COALESCE((SELECT SUM(inv.gross) FROM delivery_notes d JOIN delivery_invoices inv ON inv.delivery_id=d.id WHERE d.order_id=o.id AND inv.status='issued'),0)::text AS gross,COALESCE((SELECT SUM(r.credit_amount) FROM delivery_notes d JOIN delivery_returns r ON r.delivery_id=d.id JOIN delivery_invoices inv ON inv.delivery_id=d.id WHERE d.order_id=o.id AND inv.status='issued'),0)::text AS credit,COALESCE((SELECT SUM(p.amount) FROM delivery_notes d JOIN delivery_invoices inv ON inv.delivery_id=d.id JOIN delivery_payments p ON p.invoice_id=inv.id WHERE d.order_id=o.id AND inv.status='issued'),0)::text AS paid,(SELECT p.payment_method FROM delivery_notes d JOIN delivery_invoices inv ON inv.delivery_id=d.id JOIN delivery_payments p ON p.invoice_id=inv.id WHERE d.order_id=o.id ORDER BY p.paid_at DESC LIMIT 1) AS payment_method,(SELECT (p.paid_at AT TIME ZONE 'Asia/Jakarta')::date::text FROM delivery_notes d JOIN delivery_invoices inv ON inv.delivery_id=d.id JOIN delivery_payments p ON p.invoice_id=inv.id WHERE d.order_id=o.id ORDER BY p.paid_at DESC LIMIT 1) AS paid_at,(SELECT COUNT(*)::int FROM delivery_notes d WHERE d.order_id=o.id) AS deliveries FROM customer_orders o JOIN outlets t ON t.id=o.outlet_id LEFT JOIN outlet_groups g ON g.id=t.group_id ORDER BY o.created_at DESC LIMIT 500"
+  "SELECT o.id::text,o.document_number,t.name AS outlet,COALESCE(g.name,'—') AS group_name,o.ordered_on::text,o.status,o.physical_receipt_type,o.physical_receipt_status,COALESCE((SELECT SUM(i.quantity)::int FROM customer_order_items i WHERE i.order_id=o.id),0)::int AS ordered_pcs,COALESCE((SELECT SUM(di.quantity)::int FROM delivery_notes d JOIN delivery_note_items di ON di.delivery_id=d.id WHERE d.order_id=o.id),0)::int AS pcs,COALESCE((SELECT SUM(i.quantity*i.unit_price) FROM customer_order_items i WHERE i.order_id=o.id),0)::text AS ordered_total,COALESCE((SELECT SUM(inv.gross) FROM delivery_notes d JOIN delivery_invoices inv ON inv.delivery_id=d.id WHERE d.order_id=o.id AND inv.status='issued'),0)::text AS gross,COALESCE((SELECT SUM(r.credit_amount) FROM delivery_notes d JOIN delivery_returns r ON r.delivery_id=d.id JOIN delivery_invoices inv ON inv.delivery_id=d.id WHERE d.order_id=o.id AND inv.status='issued'),0)::text AS credit,COALESCE((SELECT SUM(p.amount) FROM delivery_notes d JOIN delivery_invoices inv ON inv.delivery_id=d.id JOIN delivery_payments p ON p.invoice_id=inv.id WHERE d.order_id=o.id AND inv.status='issued'),0)::text AS paid,(SELECT p.payment_method FROM delivery_notes d JOIN delivery_invoices inv ON inv.delivery_id=d.id JOIN delivery_payments p ON p.invoice_id=inv.id WHERE d.order_id=o.id ORDER BY p.paid_at DESC LIMIT 1) AS payment_method,(SELECT (p.paid_at AT TIME ZONE 'Asia/Makassar')::date::text FROM delivery_notes d JOIN delivery_invoices inv ON inv.delivery_id=d.id JOIN delivery_payments p ON p.invoice_id=inv.id WHERE d.order_id=o.id ORDER BY p.paid_at DESC LIMIT 1) AS paid_at,(SELECT COUNT(*)::int FROM delivery_notes d WHERE d.order_id=o.id) AS deliveries FROM customer_orders o JOIN outlets t ON t.id=o.outlet_id LEFT JOIN outlet_groups g ON g.id=t.group_id WHERE ($1::uuid IS NULL OR o.id=$1::uuid) AND ($2::text IS NULL OR t.name ILIKE '%'||$2||'%' OR o.document_number ILIKE '%'||$2||'%') ORDER BY o.created_at DESC LIMIT $3 OFFSET $4",
+  [id,search,limit,offset]
  );
 }
 
@@ -155,4 +160,56 @@ export async function updatePhysicalReceipt(data:{orderId:string;type:string;sta
   return r.rowCount;
  });
  return updated;
+}
+
+
+export type OrderDraft={id:string;document_number:string|null;outlet_id:string;outlet:string;status:string;note:string;desired_delivery:string|null;items:{id:string;product_id:string;name:string;quantity:number;unit_price:string;shipped:number}[]};
+export async function getOrderDraft(id:string):Promise<OrderDraft|null>{
+ if(!uuid(id))return null;
+ const rows=await query<{id:string;document_number:string|null;outlet_id:string;outlet:string;status:string;note:string;desired_delivery:string|null}>(
+  "SELECT o.id::text,o.document_number,o.outlet_id::text,t.name AS outlet,o.status,o.note,o.desired_delivery::text FROM customer_orders o JOIN outlets t ON t.id=o.outlet_id WHERE o.id=$1",[id]);
+ if(!rows[0])return null;
+ const items=await query<OrderDraft["items"][number]>(
+  "SELECT i.id::text,i.product_id::text,p.name,i.quantity,i.unit_price::text,COALESCE((SELECT SUM(x.quantity)::int FROM delivery_note_items x WHERE x.order_item_id=i.id),0)::int AS shipped FROM customer_order_items i JOIN products p ON p.id=i.product_id WHERE i.order_id=$1 ORDER BY p.name",[id]);
+ return {...rows[0],items};
+}
+export async function updateOrderDraft(data:{id:string;items:{id:string;quantity:number}[];date:string;note:string;reason:string},actor:string){
+ if(!uuid(data.id)||!Array.isArray(data.items)||data.items.length<1||data.items.length>50||
+ data.items.some(i=>!uuid(i.id)||!positive(i.quantity))||
+ new Set(data.items.map(i=>i.id)).size!==data.items.length||
+ (data.date!==""&&!validDate(data.date))||data.reason.trim().length<5)
+ throw new BusinessError("Data perubahan order atau alasan tidak valid.");
+ return transaction(async c=>{
+  const order=await c.query<{status:string;note:string;desired_delivery:string|null}>("SELECT status,note,desired_delivery::text FROM customer_orders WHERE id=$1 FOR UPDATE",[data.id]);
+  if(!order.rows[0]||order.rows[0].status!=="confirmed")throw new BusinessError("Hanya order belum dikirim yang dapat diedit.");
+  const d=await c.query("SELECT id FROM delivery_notes WHERE order_id=$1 LIMIT 1",[data.id]);
+  if(d.rowCount)throw new BusinessError("Order yang sudah dikirim harus memakai transaksi koreksi, bukan mengubah order.");
+  const rows=await c.query<{id:string;quantity:number}>("SELECT id::text,quantity FROM customer_order_items WHERE order_id=$1 FOR UPDATE",[data.id]);
+  if(rows.rows.length!==data.items.length||data.items.some(i=>!rows.rows.some(x=>x.id===i.id)))
+    throw new BusinessError("Daftar item sudah berubah. Muat ulang halaman.");
+  const before={order:order.rows[0],items:rows.rows};
+  await c.query("UPDATE customer_orders SET desired_delivery=$2,note=$3 WHERE id=$1",[data.id,data.date||null,data.note.trim().slice(0,400)]);
+  for(const item of data.items)await c.query("UPDATE customer_order_items SET quantity=$2 WHERE id=$1",[item.id,item.quantity]);
+  await c.query("INSERT INTO order_audit_events(order_id,actor_id,action,reason,previous_state,next_state) VALUES($1,$2,'edited',$3,$4::jsonb,$5::jsonb)",
+   [data.id,actor,data.reason.trim().slice(0,400),JSON.stringify(before),JSON.stringify({date:data.date,note:data.note,items:data.items})]);
+  await c.query("INSERT INTO activity_logs(actor_id,action,entity,entity_id) VALUES($1,'order.edit','customer_order',$2)",[actor,data.id]);
+ });
+}
+export async function cancelOrderDraft(id:string,reason:string,actor:string){
+ if(!uuid(id)||reason.trim().length<5)throw new BusinessError("Tulis alasan pembatalan minimal 5 karakter.");
+ return transaction(async c=>{
+  const row=await c.query<{status:string;note:string}>("SELECT status,note FROM customer_orders WHERE id=$1 FOR UPDATE",[id]);
+  if(!row.rows[0]||row.rows[0].status!=="confirmed")throw new BusinessError("Hanya order belum dikirim yang dapat dibatalkan.");
+  const deliveries=await c.query("SELECT id FROM delivery_notes WHERE order_id=$1 LIMIT 1",[id]);
+  if(deliveries.rowCount)throw new BusinessError("Order dengan pengiriman tidak boleh dibatalkan begitu saja.");
+  await c.query("UPDATE customer_orders SET status='cancelled' WHERE id=$1",[id]);
+  await c.query("INSERT INTO order_audit_events(order_id,actor_id,action,reason,previous_state,next_state) VALUES($1,$2,'cancelled',$3,$4::jsonb,$5::jsonb)",
+   [id,actor,reason.trim().slice(0,400),JSON.stringify(row.rows[0]),JSON.stringify({status:"cancelled"})]);
+  await c.query("INSERT INTO activity_logs(actor_id,action,entity,entity_id) VALUES($1,'order.cancel','customer_order',$2)",[actor,id]);
+ });
+}
+export async function listOrderAudit(id:string){
+ if(!uuid(id))return [];
+ return query<{action:string;reason:string;created_at:Date;actor_id:string}>(
+  "SELECT action,reason,created_at,actor_id FROM order_audit_events WHERE order_id=$1 ORDER BY created_at DESC LIMIT 50",[id]);
 }

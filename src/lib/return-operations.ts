@@ -46,12 +46,23 @@ export async function createV2Return(data:{requestKey:string;deliveryId:string;o
     [data.deliveryId,invoice.rows[0].id]);
   const creditCents=Math.round(Number(line.rows[0].unit_price)*100)*data.quantity;
   const nextNet=Math.round(Number(invoice.rows[0].gross)*100)-Math.round(Number(totals.rows[0].credits)*100)-creditCents;
-  if(nextNet<Math.round(Number(totals.rows[0].paid)*100))
-   throw new BusinessError("Retur melebihi sisa tagihan. Proses pengembalian dana perlu diselesaikan terlebih dahulu.");
+  // Retur atas invoice yang sudah dibayar tetap boleh dicatat.
+  // Selisih kelebihan pembayaran menjadi kewajiban refund, bukan piutang negatif.
   const r=await c.query<{id:string}>(
    `INSERT INTO delivery_returns(request_key,delivery_id,order_item_id,quantity,credit_amount,restock,reason,qc_result,created_by)
      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id`,
    [data.requestKey,data.deliveryId,data.orderItemId,data.quantity,creditCents/100,data.restock,data.reason.trim().slice(0,400),data.qc,actor]);
+  const paidCents=Math.round(Number(totals.rows[0].paid)*100);
+  const overpaidCents=Math.max(0,paidCents-nextNet);
+  if(overpaidCents>0){
+   const priorRefunds=await c.query<{amount:string}>(
+    "SELECT COALESCE(SUM(amount),0)::text AS amount FROM delivery_refund_obligations WHERE delivery_id=$1",[data.deliveryId]);
+   const already=Math.round(Number(priorRefunds.rows[0].amount)*100);
+   const additional=overpaidCents-already;
+   if(additional>0)await c.query(
+    "INSERT INTO delivery_refund_obligations(delivery_id,return_id,amount,created_by) VALUES($1,$2,$3,$4)",
+    [data.deliveryId,r.rows[0].id,additional/100,actor]);
+  }
   if(data.restock){
     const balance=await c.query("UPDATE inventory_balances SET quantity=quantity+$2,updated_at=now() WHERE product_id=$1",
       [line.rows[0].product_id,data.quantity]);
@@ -103,5 +114,25 @@ export async function resolveComplaint(id:string,status:string,resolution:string
   [id,status,resolution.trim().slice(0,1000)]);
   if(!r.rowCount)throw new BusinessError("Komplain sudah ditutup atau tidak ditemukan.");
   await c.query("INSERT INTO activity_logs(actor_id,action,entity,entity_id) VALUES($1,'complaint.resolve','complaint',$2)",[actor,id]);
+ });
+}
+
+
+export async function listPendingRefunds(){
+ return query<{id:string;document_number:string|null;outlet:string;amount:string;created_at:Date}>(
+  "SELECT r.id::text,co.document_number,o.name AS outlet,r.amount::text,r.created_at FROM delivery_refund_obligations r JOIN delivery_notes d ON d.id=r.delivery_id JOIN customer_orders co ON co.id=d.order_id JOIN outlets o ON o.id=co.outlet_id WHERE r.status='pending' ORDER BY r.created_at DESC LIMIT 100");
+}
+export async function settleRefund(data:{id:string;method:string;reference:string},actor:string){
+ if(!uuid(data.id)||!["cash","transfer","other"].includes(data.method)||data.reference.trim().length<3)
+  throw new BusinessError("Pilih metode dan isi referensi refund (minimal 3 karakter).");
+ return transaction(async c=>{
+  const row=await c.query<{delivery_id:string;status:string}>(
+   "SELECT delivery_id::text,status FROM delivery_refund_obligations WHERE id=$1 FOR UPDATE",[data.id]);
+  if(!row.rows[0]||row.rows[0].status!=="pending")
+   throw new BusinessError("Refund tidak ditemukan atau sudah dibayarkan.");
+  await c.query(
+   "UPDATE delivery_refund_obligations SET status='paid',payment_method=$2,payment_reference=$3,paid_at=now(),paid_by=$4 WHERE id=$1 AND status='pending'",
+   [data.id,data.method,data.reference.trim().slice(0,120),actor]);
+  await c.query("INSERT INTO activity_logs(actor_id,action,entity,entity_id) VALUES($1,'delivery.refund.paid','delivery',$2)",[actor,row.rows[0].delivery_id]);
  });
 }

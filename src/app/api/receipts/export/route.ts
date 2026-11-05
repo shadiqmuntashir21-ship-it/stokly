@@ -8,7 +8,12 @@ const safe=(s:string)=>{
 const esc=(value:unknown)=>'"'+safe(String(value??"")).replaceAll('"','""')+'"';
 export async function GET(){
  await requireActor(["owner","admin"]);
- const data=await listInvoices();
+ const data=[];
+ for(let offset=0;offset<50000;offset+=500){
+  const page=await listInvoices({limit:500,offset});
+  data.push(...page);
+  if(page.length<500)break;
+ }
  const header=["NO KWITANSI","TGL","OUTLET","G.O","PCS","AMOUNT","RETURN","PAYMENT","TGL BAYAR","BLN BAYAR","BULAN","PAYMENT METODE","FINAL AMOUNT","TERBAYAR","SISA PIUTANG","FISIK KWITANSI"];
  const lines=[header.map(esc).join(",")];
  for(const r of data){

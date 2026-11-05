@@ -1,7 +1,7 @@
 name: STOKLY Development Checks
 on:
   push:
-    branches: [feat/pwa-foundation, feat/stokly-v3-operational-revision]
+    branches: [feat/pwa-foundation, feat/stokly-v3-operational-revision, feat/stokly-v4-operator-first]
   pull_request:
     branches: [main]
 permissions:

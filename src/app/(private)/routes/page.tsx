@@ -5,7 +5,7 @@ import {listRoutes,listAvailableDeliveries,routeAllocations} from "@/lib/route-o
 import {PageHead,Panel,Notice,Empty,rupiah} from "@/components/ui";
 import {routeCreate,routeStop,routeCost} from "./actions";
 export const dynamic="force-dynamic";
-const today=()=>new Intl.DateTimeFormat("sv-SE",{timeZone:"Asia/Jakarta",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+const today=()=>new Intl.DateTimeFormat("sv-SE",{timeZone:"Asia/Makassar",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 export default async function DeliveryRoutes({searchParams}:{searchParams:Promise<{success?:string;error?:string}>}){
  await requireActor(["owner","admin"]);
  const [routes,available,allocations,params]=await Promise.all([listRoutes(),listAvailableDeliveries(),routeAllocations(),searchParams]);

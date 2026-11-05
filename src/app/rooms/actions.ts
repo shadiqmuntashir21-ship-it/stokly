@@ -1,17 +1,16 @@
 "use server";
-import { cookies, headers } from "next/headers";
-import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { ROOM_COOKIE } from "@/lib/trusted-devices";
-
+import {cookies,headers} from "next/headers";
+import {redirect} from "next/navigation";
+import {auth} from "@/lib/auth";
+import {ROOM_COOKIE,DEVICE_COOKIE,getStaffDevice} from "@/lib/trusted-devices";
 export async function enterRoom(form:FormData){
  const room=String(form.get("room")||"");
- if(room!=="admin" && room!=="marketing") throw new Error("Room tidak valid.");
+ if(room!=="admin"&&room!=="marketing")redirect("/rooms?denied=1");
  const jar=await cookies();
- jar.set(ROOM_COOKIE,room,{secure:process.env.NODE_ENV==="production",httpOnly:true,sameSite:"lax",path:"/",maxAge:60*60*24*30});
+ const device=await getStaffDevice(jar.get(DEVICE_COOKIE)?.value);
+ if(!device||device.status!=="approved"||device.role!==room)redirect("/devices/request?room="+room);
+ jar.set(ROOM_COOKIE,room,{secure:process.env.NODE_ENV==="production",httpOnly:true,sameSite:"lax",path:"/",maxAge:60*60*24*90});
  const session=await auth.api.getSession({headers:await headers()});
- if(session){
-   await auth.api.signOut({headers:await headers()});
- }
+ if(session)await auth.api.signOut({headers:await headers()});
  redirect("/dashboard");
 }

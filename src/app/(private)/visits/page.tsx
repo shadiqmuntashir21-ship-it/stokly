@@ -6,7 +6,7 @@ import {listVisits} from "@/lib/coconut-operations";
 import {PageHead,Panel,Empty,Notice} from "@/components/ui";
 import {visitAction} from "../coconut-actions";
 export const dynamic="force-dynamic";
-const today=()=>new Intl.DateTimeFormat("sv-SE",{timeZone:"Asia/Jakarta",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+const today=()=>new Intl.DateTimeFormat("sv-SE",{timeZone:"Asia/Makassar",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 export default async function Visits({searchParams}:{searchParams:Promise<{success?:string;error?:string}>}){
  await requireActor(["owner","admin","marketing"]);
  const [outletList,visits,params]=await Promise.all([outlets(),listVisits(),searchParams]);

@@ -3,7 +3,7 @@ import { requireActor } from "@/lib/access";
 import { revalidatePath } from "next/cache";
 import {redirect} from "next/navigation";
 import {safeWrite} from "@/lib/safe-action";
-import {createV2Return,reportComplaint,resolveComplaint} from "@/lib/return-operations";
+import {createV2Return,reportComplaint,resolveComplaint,settleRefund} from "@/lib/return-operations";
 const s=(f:FormData,k:string)=>String(f.get(k)||"");
 export async function submitReturn(f:FormData){
  const actor=await requireActor(["owner","admin"]);
@@ -23,4 +23,10 @@ export async function finishComplaint(f:FormData){
  const actor=await requireActor(["owner","admin"]);
  await safeWrite("/outlet-returns",()=>resolveComplaint(s(f,"id"),s(f,"status"),s(f,"resolution"),actor.id));
  revalidatePath("/outlet-returns");redirect("/outlet-returns?success=1");
+}
+
+export async function settleRefundAction(f:FormData){
+ const actor=await requireActor(["owner"]);
+ await safeWrite("/invoices",()=>settleRefund({id:s(f,"id"),method:s(f,"method"),reference:s(f,"reference")},actor.id));
+ revalidatePath("/invoices");revalidatePath("/outlet-returns");redirect("/invoices?success=1");
 }

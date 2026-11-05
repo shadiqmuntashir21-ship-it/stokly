@@ -5,7 +5,7 @@ import {listCoconutReceipts,listProduction} from "@/lib/coconut-operations";
 import {PageHead,Panel,Notice,Empty} from "@/components/ui";
 import {ProductionComposer} from "@/components/production-composer";
 export const dynamic="force-dynamic";
-const today=()=>new Intl.DateTimeFormat("sv-SE",{timeZone:"Asia/Jakarta",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+const today=()=>new Intl.DateTimeFormat("sv-SE",{timeZone:"Asia/Makassar",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 export default async function Production({searchParams}:{searchParams:Promise<{success?:string;error?:string}>}){
  await requireActor(["owner","admin"]);
  const [batches,products,runs,params]=await Promise.all([listCoconutReceipts(),listProducts(),listProduction(),searchParams]);

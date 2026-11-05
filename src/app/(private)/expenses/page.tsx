@@ -7,7 +7,7 @@ import {financeSnapshot,listExpenseCategories,listExpenses} from "@/lib/expense-
 import {PageHead,Panel,Notice,Empty,rupiah} from "@/components/ui";
 import {addExpenseAction} from "./actions";
 export const dynamic="force-dynamic";
-const today=()=>new Intl.DateTimeFormat("sv-SE",{timeZone:"Asia/Jakarta",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+const today=()=>new Intl.DateTimeFormat("sv-SE",{timeZone:"Asia/Makassar",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 export default async function Expenses({searchParams}:{searchParams:Promise<{success?:string;error?:string}>}){
  await requireOwner();
  const [cats,entries,snapshot,outletList,productions,params]=await Promise.all([
