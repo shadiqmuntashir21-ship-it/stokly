@@ -9,7 +9,7 @@ import type { Actor,Role } from "@/lib/access";
 
 type NavItem={href:string;label:string;icon:typeof LayoutDashboard;roles:Role[]};
 const groups:{title:string;items:NavItem[]}[]=[
- {title:"Beranda",items:[{href:"/dashboard",label:"Pekerjaan Hari Ini",icon:LayoutDashboard,roles:["owner","admin","marketing"]}]},
+ {title:"Beranda",items:[{href:"/dashboard",label:"Pekerjaan Hari Ini",icon:LayoutDashboard,roles:["owner","admin","marketing"]},{href:"/search",label:"Cari Semua Data",icon:Search,roles:["owner","admin","marketing"]}]},
  {title:"Pembelian & QC",items:[
   {href:"/procurement",label:"Pembelian Kelapa",icon:Sprout,roles:["owner","admin"]},
   {href:"/qc",label:"QC & Afkir",icon:ClipboardCheck,roles:["owner","admin"]}]},
@@ -26,7 +26,8 @@ const groups:{title:string;items:NavItem[]}[]=[
  {title:"Laporan",items:[
   {href:"/reports",label:"Laporan Terpadu",icon:ChartColumn,roles:["owner","admin"]},
   {href:"/expenses",label:"Biaya & Keuangan",icon:WalletCards,roles:["owner"]},
-  {href:"/costing",label:"HPP Produksi",icon:Calculator,roles:["owner"]}]},
+  {href:"/costing",label:"HPP Produksi",icon:Calculator,roles:["owner"]},
+  {href:"/closeout",label:"Penutupan Hari",icon:ClipboardCheck,roles:["owner"]}]},
  {title:"Pengaturan & Lainnya",items:[
   {href:"/suppliers",label:"Supplier & Petani",icon:Sprout,roles:["owner","admin"]},
   {href:"/visits",label:"Kunjungan Marketing",icon:CalendarDays,roles:["owner","admin","marketing"]},
@@ -81,7 +82,7 @@ export function Shell({actor,children}:{actor:Actor;children:React.ReactNode}){
    <header className="topbar">
     <div className="topbar-start"><button className="menu-button" aria-label="Buka menu" onClick={()=>setOpen(true)}><Menu size={22}/></button>
      <span className="topbar-section">WORKSPACE <ChevronRight size={12}/> <strong>{groups.flatMap(g=>g.items).find(x=>x.href===pathname)?.label||"STOKLY"}</strong></span></div>
-    <div className="topbar-right"><span className={"live-pill "+(!online?"status-danger":"")}><Wifi size={14}/> {online?"Online":"Offline"}</span><span className="room-pill">{actor.role==="owner"?"OWNER":actor.role==="admin"?"ADMIN":"MARKETING"}</span><span className="top-avatar">{actor.name.charAt(0).toUpperCase()}</span></div>
+    <div className="topbar-right"><Link href="/search" aria-label="Cari transaksi, produk, outlet" title="Cari semua data"><Search size={18}/></Link><span className={"live-pill "+(!online?"status-danger":"")}><Wifi size={14}/> {online?"Online":"Offline"}</span><span className="room-pill">{actor.role==="owner"?"OWNER":actor.role==="admin"?"ADMIN":"MARKETING"}</span><span className="top-avatar">{actor.name.charAt(0).toUpperCase()}</span></div>
    </header>
    <main className="content" id="main-content">{children}</main>
    <footer className="app-footer">STOKLY <span>·</span> Kelapa Branding Indonesia <span>·</span> Operasional usaha dalam satu ruang.</footer>
