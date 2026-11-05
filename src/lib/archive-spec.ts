@@ -13,6 +13,24 @@ const visit=fy("v.visited_on");
 const expense=fy("e.incurred_on");
 
 export const datasets:{file:string;sql:string;master?:boolean}[]=[
+
+ {file:"go_source_rows_reference",sql:"SELECT * FROM legacy_source_rows",master:true},
+ {file:"go_import_checkpoints",sql:"SELECT * FROM migration_checkpoints",master:true},
+ {file:"go_receipt_register",sql:"SELECT * FROM receipt_register",master:true},
+ {file:"go_legacy_void_receipts",sql:"SELECT * FROM legacy_void_receipts",master:true},
+ {file:"go_legacy_stock_snapshot",sql:"SELECT * FROM legacy_stock_snapshots",master:true},
+ {file:"go_legacy_receipts",sql:"SELECT r.* FROM legacy_receipts r WHERE "+fy("r.issued_on")},
+ {file:"go_legacy_receipt_payments",sql:"SELECT p.* FROM legacy_receipt_payments p WHERE "+fy("p.paid_on")},
+ {file:"go_legacy_cash_entries",sql:"SELECT e.* FROM legacy_cash_entries e WHERE "+fy("e.entry_date")},
+ {file:"go_cash_operational",sql:"SELECT e.* FROM cash_ledger_entries e WHERE "+fy("e.entry_date")},
+ {file:"go_inventory_assets",sql:"SELECT * FROM inventory_assets",master:true},
+ {file:"go_inventory_movements",sql:"SELECT m.* FROM inventory_asset_movements m WHERE "+fy("m.movement_date")},
+ {file:"go_basket_old",sql:"SELECT * FROM legacy_basket_movements",master:true},
+ {file:"go_purchase_groups",sql:"SELECT g.* FROM kelapa_go_purchase_groups g WHERE "+fy("g.received_date")},
+ {file:"go_purchase_group_items",sql:"SELECT i.* FROM kelapa_go_purchase_rows i JOIN kelapa_go_purchase_groups g ON g.id=i.group_id WHERE "+fy("g.received_date")},
+ {file:"go_production_days",sql:"SELECT d.* FROM coconut_production_days d WHERE "+fy("d.production_date")},
+ {file:"go_production_outputs",sql:"SELECT o.* FROM coconut_production_day_outputs o JOIN coconut_production_days d ON d.id=o.production_id WHERE "+fy("d.production_date")},
+ {file:"go_production_consumptions",sql:"SELECT x.* FROM coconut_production_day_consumptions x JOIN coconut_production_days d ON d.id=x.production_id WHERE "+fy("d.production_date")},
  {file:"master_suppliers",sql:"SELECT * FROM suppliers",master:true},
  {file:"master_outlets",sql:"SELECT * FROM outlets",master:true},
  {file:"master_outlet_groups",sql:"SELECT * FROM outlet_groups",master:true},

@@ -9,17 +9,18 @@ export default async function ReceiptSettings({searchParams}:{searchParams:Promi
  await requireOwner();
  const [status,p]=await Promise.all([receiptSetupStatus(),searchParams]);
  const active=status.nextNumber!==null;
- return <><PageHead eyebrow="OWNER / PENOMORAN" title="Nomor Kwitansi Otomatis" description="Aktivasi sekali setelah memastikan nomor historis Kanda agar tidak terjadi kwitansi ganda."/><Notice success={p.success} error={p.error}/>
+ return <><PageHead eyebrow="OWNER / PENOMORAN" title="Nomor Kwitansi Otomatis" description="Nomor historis KELAPA GO hingga 0001619 telah menjadi acuan; nota diterbitkan otomatis saat pengiriman."/><Notice success={p.success} error={p.error}/>
  <Panel title={active?"Penomoran sudah aktif":"Aktivasi nomor kwitansi 7 digit"}>
-  <p>Format: <b>0000001, 0000002, ...</b> tanpa reset bulanan. Setiap nomor unik dan tidak dapat digunakan ulang.</p>
+  <p>Format: <b>0001620, 0001621, ...</b> melanjutkan catatan KELAPA GO tanpa reset bulanan. Setiap nomor unik dan tidak dapat digunakan ulang.</p>
   <p>Nomor berikutnya: <b>{active?String(status.nextNumber).padStart(7,"0"):"BELUM DIAKTIFKAN"}</b></p>
-  <p>Order V3 yang masih menunggu nomor: <b>{status.pending}</b>.</p>
+  <p>Order lama yang menunggu pengiriman: <b>{status.pending}</b>.</p>
   <p>Order lama yang belum dicocokkan: <b>{status.legacy}</b>. Order lama tidak diberi nomor otomatis tanpa mencocokkan kwitansi fisiknya.</p>
-  <form action={activateReceiptAction} className="form-grid">
+  {!active&&<form action={activateReceiptAction} className="form-grid">
    {!active&&<label className="wide">Nomor berikutnya yang BENAR-BENAR BELUM digunakan<input name="nextNumber" required type="number" min="1" max="9999999" step="1" placeholder="Misal 352 jika 0000351 adalah nomor terakhir" /></label>}
    <label className="wide"><input name="confirmed" type="checkbox" value="yes" required/> Saya sudah memeriksa keseluruhan spreadsheet dan buku kwitansi fisik; nomor ini belum pernah diterbitkan.</label>
    <SubmitButton className="primary-button">{active?"Tetapkan nomor untuk order V3 tertunda":"Aktifkan & beri nomor order V3 tertunda"}</SubmitButton>
-  </form>
+  </form>}
+  {active&&<p className="form-hint">Penomoran sudah aktif. Nomor kuitansi dibuat otomatis ketika Admin mengonfirmasi pengiriman. Nomor rusak ditandai dari halaman Kwitansi & Pembayaran.</p>}
   <p className="form-hint">Jangan menggunakan nomor terbesar dari tangkapan layar yang sedang difilter. Nomor yang telah diaktifkan tidak bisa di-reset dari halaman ini.</p>
  </Panel>
  <p><Link href="/orders">Kembali ke Order Outlet</Link></p>

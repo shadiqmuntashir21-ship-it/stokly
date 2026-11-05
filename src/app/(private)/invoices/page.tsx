@@ -9,6 +9,7 @@ import {invoiceBalance} from "@/lib/business-math";
 import {listPendingRefunds} from "@/lib/return-operations";
 import {settleRefundAction} from "../outlet-returns/actions";
 import {payAction,physicalReceiptAction} from "../order-actions";
+import {voidReceiptAction} from "../go-actions";
 export const dynamic="force-dynamic";
 const fmt=(n:number)=>rupiah(Math.max(0,n));
 export default async function Invoices({searchParams}:{searchParams:Promise<{success?:string;error?:string;search?:string;page?:string;pay?:string;filter?:string}>}){
@@ -24,8 +25,9 @@ export default async function Invoices({searchParams}:{searchParams:Promise<{suc
 
  const due=invoices.filter(x=>x.status!=="cancelled"&&Number(x.gross)-Number(x.credit)-Number(x.paid)>0);
  const totalDue=invoices.reduce((s,x)=>s+Math.max(0,Number(x.gross)-Number(x.credit)-Number(x.paid)),0);
- return <><PageHead eyebrow="PENJUALAN / KWITANSI" title="Kwitansi & Pembayaran" description="Satu nomor kwitansi per order, seluruh pengiriman, retur, dan pembayaran direkap bersama."/><Notice success={params.success} error={params.error}/>
+ return <><PageHead eyebrow="PENJUALAN / KWITANSI" title="Kwitansi & Pembayaran" description="Setiap pengiriman menerbitkan nomor nota otomatis. Pembayaran dan retur terhubung ke nota; kuitansi historis mempunyai rekap tersendiri."/><Notice success={params.success} error={params.error}/>
  <div className="metrics-grid"><section className="metric"><div className="metric-label">Total order tercatat</div><strong>{invoices.length}</strong></section><section className="metric"><div className="metric-label">Piutang belum dibayar</div><strong>{rupiah(totalDue)}</strong></section></div>
+ <p><Link href="/invoices/legacy">Lihat kuitansi historis dan Pivot UNPAID KELAPA GO →</Link> · <Link href="/invoices/notes">Daftar nota pengiriman →</Link></p>
  <Panel title="Catat pembayaran" detail="Pilih kwitansi, nominal sisa tagihan akan muncul otomatis">
   <PaymentComposer invoices={paymentPool} requestKey={randomUUID()} initialOrder={params.pay||""}/>
  </Panel>
@@ -41,6 +43,13 @@ export default async function Invoices({searchParams}:{searchParams:Promise<{suc
    </form>
   </section>)}</div>
  </Panel>}
+ <details className="edit-detail"><summary>Catat nomor nota fisik rusak</summary><Panel title="Register nota rusak">
+  <form action={voidReceiptAction} className="form-grid">
+   <label>Nomor nota rusak<input name="number" required pattern="[0-9]{1,7}" maxLength={7} placeholder="0001620"/></label>
+   <label className="wide">Alasan / bukti rusak<input name="reason" required minLength={5} maxLength={400}/></label>
+   <SubmitButton className="primary-button">Tandai Nomor Rusak Permanen</SubmitButton>
+  </form><p className="form-hint">Nomor rusak tidak bisa digunakan ulang. Bila sudah dipakai pada pengiriman, sistem menolak tindakan ini.</p>
+ </Panel></details>
  <details className="edit-detail"><summary>Pengaturan kwitansi fisik</summary><Panel title="Data kwitansi fisik">
   <form action={physicalReceiptAction} className="form-grid">
    <label className="wide">Kwitansi<select name="orderId" required defaultValue=""><option value="" disabled>Pilih kwitansi</option>{invoices.map(x=><option key={x.id} value={x.id}>{x.document_number||"Nomor belum disesuaikan"} · {x.outlet}</option>)}</select></label>

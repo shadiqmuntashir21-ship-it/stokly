@@ -46,7 +46,7 @@ export async function createOrder(data:{requestKey:string;outletId:string;items:
    if(changed&&data.priceReason.trim().length<5)throw new BusinessError("Tulis alasan perubahan harga transaksi (minimal 5 karakter).");
    return {...i,price,master,changed};
   });
-  const order=await c.query<{id:string;document_number:string|null}>("INSERT INTO customer_orders(request_key,outlet_id,desired_delivery,note,created_by,receipt_number_pending,ordered_on) VALUES($1,$2,$3,$4,$5,true,(now() AT TIME ZONE 'Asia/Makassar')::date) RETURNING id::text,document_number",[data.requestKey,data.outletId,data.deliveryDate||null,data.note.trim().slice(0,400),actor]);
+  const order=await c.query<{id:string;document_number:string|null}>("INSERT INTO customer_orders(request_key,outlet_id,desired_delivery,note,created_by,receipt_number_pending,ordered_on,document_number) VALUES($1,$2,$3,$4,$5,true,(now() AT TIME ZONE 'Asia/Makassar')::date,NULL) RETURNING id::text,document_number",[data.requestKey,data.outletId,data.deliveryDate||null,data.note.trim().slice(0,400),actor]);
   if(order.rows[0].document_number)await c.query("UPDATE customer_orders SET receipt_number_pending=false WHERE id=$1",[order.rows[0].id]);
   for(const item of priced){
    const added=await c.query<{id:string}>("INSERT INTO customer_order_items(order_id,product_id,quantity,unit_price) VALUES($1,$2,$3,$4) RETURNING id::text",[order.rows[0].id,item.productId,item.quantity,item.price]);
@@ -67,10 +67,6 @@ export async function dispatchOrder(data:{requestKey:string;orderId:string;items
   if(previous.rows[0])return previous.rows[0].id;
   const order=await c.query<{status:string;document_number:string|null;receipt_number_pending:boolean}>("SELECT status,document_number,receipt_number_pending FROM customer_orders WHERE id=$1 FOR UPDATE",[data.orderId]);
   if(!order.rows[0]||order.rows[0].status==='cancelled')throw new BusinessError("Order tidak ditemukan atau dibatalkan.");
-  if(!order.rows[0].document_number&&order.rows[0].receipt_number_pending){
-   await c.query("UPDATE customer_orders SET document_number=allocate_stokly_receipt_number() WHERE id=$1",[data.orderId]);
-   await c.query("UPDATE customer_orders SET receipt_number_pending=false WHERE id=$1 AND document_number IS NOT NULL",[data.orderId]);
-  }
   const ids=data.items.map(i=>i.orderItemId);
   const lines=await c.query<{id:string;product_id:string;quantity:number;unit_price:string;shipped:number}>(
    "SELECT i.id::text,i.product_id::text,i.quantity,i.unit_price::text,COALESCE((SELECT SUM(x.quantity)::int FROM delivery_note_items x WHERE x.order_item_id=i.id),0)::int AS shipped FROM customer_order_items i WHERE i.order_id=$1 AND i.id=ANY($2::uuid[]) FOR UPDATE",
@@ -89,8 +85,16 @@ export async function dispatchOrder(data:{requestKey:string;orderId:string;items
   const balances=await c.query<{product_id:string;quantity:number}>("SELECT product_id::text,quantity FROM inventory_balances WHERE product_id=ANY($1::uuid[]) ORDER BY product_id FOR UPDATE",[productIds]);
   if(balances.rowCount!==productIds.length||balances.rows.some(x=>x.quantity<(required.get(x.product_id)||0)))
    throw new BusinessError("Stok tidak mencukupi untuk seluruh item pengiriman.");
-  const delivery=await c.query<{id:string}>("INSERT INTO delivery_notes(request_key,order_id,delivered_on,note,created_by) VALUES($1,$2,$3,$4,$5) RETURNING id::text",
-   [data.requestKey,data.orderId,data.deliveredOn,data.note.trim().slice(0,400),actor]);
+  const receiptNumber=(await c.query<{number:string|null}>("SELECT allocate_stokly_receipt_number() AS number")).rows[0]?.number;
+  if(!receiptNumber)throw new BusinessError("Nomor kuitansi habis atau belum aktif.");
+  const delivery=await c.query<{id:string}>("INSERT INTO delivery_notes(request_key,order_id,delivered_on,note,created_by,document_number) VALUES($1,$2,$3,$4,$5,$6) RETURNING id::text",
+   [data.requestKey,data.orderId,data.deliveredOn,data.note.trim().slice(0,400),actor,receiptNumber]);
+  await c.query("INSERT INTO receipt_register(document_number,status,delivery_id,actor_id,note) VALUES($1,'ISSUED',$2,$3,'Terbit otomatis pada saat pengiriman')",
+   [receiptNumber,delivery.rows[0].id,actor]);
+  if(!order.rows[0].document_number){
+   await c.query("UPDATE customer_orders SET document_number=$2,receipt_number_pending=false WHERE id=$1 AND document_number IS NULL",
+    [data.orderId,receiptNumber]);
+  }
   for(const item of data.items){
    const line=lines.rows.find(l=>l.id===item.orderItemId)!;
    await c.query("INSERT INTO delivery_note_items(delivery_id,order_item_id,quantity,unit_price) VALUES($1,$2,$3,$4)",[delivery.rows[0].id,line.id,item.quantity,line.unit_price]);
@@ -146,6 +150,9 @@ export async function payOrder(data:{requestKey:string;orderId:string;amount:num
    if(remaining===0)break;
   }
   if(remaining!==0)throw new BusinessError("Pembagian pembayaran gagal.");
+  if(data.method==="cash")await c.query(
+   "INSERT INTO cash_ledger_entries(request_key,entry_date,direction,category,description,amount,reference_type,reference_id,created_by) VALUES($1,(now() AT TIME ZONE 'Asia/Makassar')::date,'IN','PENJUALAN CASH',$2,$3,'order',$4,$5) ON CONFLICT(request_key) DO NOTHING",
+   [data.requestKey,"Pembayaran tunai untuk order "+data.orderId,data.amount,data.orderId,actor]);
   await c.query("INSERT INTO activity_logs(actor_id,action,entity,entity_id) VALUES($1,'order.payment','customer_order',$2)",[actor,data.orderId]);
   return batch.rows[0].id;
  });

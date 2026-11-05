@@ -3,6 +3,9 @@ import {requireOwner} from "@/lib/access";
 import {PageHead,Panel} from "@/components/ui";
 export const dynamic="force-dynamic";
 const options=[
+ {title:"Data Awal GO & Rekap Otomatis",detail:"Seluruh sumber historis, pivot unpaid, rekap outlet, kas",url:"/owner/legacy"},
+ {title:"Kas Kecil",detail:"Catat dan periksa arus kas serta saldo",url:"/cash"},
+ {title:"Inventaris & Keranjang",detail:"Daftar aset, pinjaman, hilang dan kembali",url:"/inventory"},
  {title:"Penomoran Kwitansi",detail:"Lihat seri otomatis dan penanganan nomor tertunda",url:"/settings/receipts"},
  {title:"Kwitansi Lama",detail:"Tautkan nomor fisik atau terbitkan nomor dari seri baru",url:"/owner/receipts"},
  {title:"Master Produk & Harga",detail:"Kelola harga, stok minimum dan produk aktif",url:"/products"},

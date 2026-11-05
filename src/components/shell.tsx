@@ -1,7 +1,7 @@
 "use client";
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Package, PackagePlus, ShoppingCart, RotateCcw, ChartColumn, LogOut, Menu, X, KeyRound, LayoutGrid, Truck, Sprout, ClipboardCheck, Factory, CalendarDays, ClipboardList, FileText, WalletCards, MapPinned, Calculator, ArrowUpRight, Search, Wifi, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Package, PackagePlus, ShoppingCart, RotateCcw, ChartColumn, LogOut, Menu, X, KeyRound, LayoutGrid, Truck, Sprout, ClipboardCheck, Factory, CalendarDays, ClipboardList, FileText, WalletCards, Calculator, ArrowUpRight, Search, Wifi, ChevronRight } from "lucide-react";
 import { useEffect,useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { BrandLockup } from "@/components/brand";
@@ -19,7 +19,8 @@ const groups:{title:string;items:NavItem[]}[]=[
  {title:"Penjualan & Pengiriman",items:[
   {href:"/orders",label:"Order & Pengiriman",icon:ShoppingCart,roles:["owner","admin","marketing"]},
   {href:"/outlets",label:"Outlet",icon:Truck,roles:["owner","admin","marketing"]},
-  {href:"/routes",label:"Rute & Ongkir",icon:MapPinned,roles:["owner","admin"]}]},
+  {href:"/cash",label:"Kas Kecil",icon:WalletCards,roles:["owner","admin"]},
+  {href:"/inventory",label:"Inventaris & Keranjang",icon:Package,roles:["owner","admin"]}]},
  {title:"Pembayaran & Retur",items:[
   {href:"/invoices",label:"Kwitansi & Pembayaran",icon:FileText,roles:["owner","admin"]},
   {href:"/outlet-returns",label:"Retur & Komplain",icon:RotateCcw,roles:["owner","admin","marketing"]}]},
@@ -39,8 +40,11 @@ const ownerGroups:{title:string;items:NavItem[]}[]=[
   {href:"/owner",label:"Beranda Bisnis",icon:LayoutDashboard,roles:["owner"]},
   {href:"/owner/operations",label:"Monitoring Operasional",icon:ClipboardCheck,roles:["owner"]}]},
  {title:"Analisis & Keuangan",items:[
-  {href:"/owner/outlets",label:"Penjualan & 50 Outlet",icon:Truck,roles:["owner"]},
+  {href:"/owner/outlets",label:"Penjualan & Outlet",icon:Truck,roles:["owner"]},
+  {href:"/owner/legacy",label:"Data Awal & Pivot GO",icon:ChartColumn,roles:["owner"]},
   {href:"/owner/finance",label:"Keuangan & HPP",icon:Calculator,roles:["owner"]},
+  {href:"/cash",label:"Kas Kecil",icon:WalletCards,roles:["owner"]},
+  {href:"/inventory",label:"Inventaris & Keranjang",icon:Package,roles:["owner"]},
   {href:"/reports",label:"Laporan Terpadu",icon:ChartColumn,roles:["owner"]},
   {href:"/closeout",label:"Tutup Buku Harian",icon:ClipboardList,roles:["owner"]}]},
  {title:"Kontrol & Pengaturan",items:[
@@ -52,6 +56,7 @@ const ownerGroups:{title:string;items:NavItem[]}[]=[
  {title:"Buka Operasional",items:[
   {href:"/orders",label:"Order & Pengiriman",icon:ShoppingCart,roles:["owner"]},
   {href:"/invoices",label:"Kwitansi & Pembayaran",icon:WalletCards,roles:["owner"]},
+  {href:"/invoices/legacy",label:"Piutang GO (UNPAID)",icon:FileText,roles:["owner"]},
   {href:"/procurement",label:"Pembelian Kelapa",icon:Sprout,roles:["owner"]},
   {href:"/qc",label:"QC & Afkir",icon:ClipboardCheck,roles:["owner"]},
   {href:"/production",label:"Produksi & Stok",icon:Factory,roles:["owner"]},

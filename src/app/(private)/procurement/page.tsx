@@ -1,7 +1,7 @@
 import {SubmitButton} from "@/components/submit-button";
 import Link from "next/link";
 import {query} from "@/lib/db";
-import {CoconutReceiveForm} from "@/components/coconut-receive-form";
+import {GoPurchaseComposer} from "@/components/go-purchase-composer";
 import { randomUUID } from "node:crypto";
 import { requireActor } from "@/lib/access";
 import { suppliers } from "@/lib/v2-master";
@@ -9,17 +9,18 @@ import { listGrades, listSupplierPrices, listCoconutReceipts } from "@/lib/cocon
 import { PageHead, Panel, Empty, Notice, rupiah } from "@/components/ui";
 import { addGradeAction,editGradeAction,addSupplierPriceAction,receiveAction } from "../coconut-actions";
 export const dynamic="force-dynamic";
+const today=()=>new Intl.DateTimeFormat("sv-SE",{timeZone:"Asia/Makassar",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 export default async function Procurement({searchParams}:{searchParams:Promise<{success?:string;error?:string}>}){
  await requireActor(["owner","admin"]);
  const [supplierList,grades,prices,receipts,params,latestPrices]=await Promise.all([suppliers(),listGrades(),listSupplierPrices(),listCoconutReceipts(),searchParams,
  query<{supplier_id:string;grade_id:string;unit_price:string}>("SELECT DISTINCT ON (supplier_id,grade_id) supplier_id::text,grade_id::text,unit_price::text FROM supplier_prices ORDER BY supplier_id,grade_id,effective_at DESC,id DESC")]);
  const activeSuppliers=supplierList.filter(s=>s.active);
  const ready=activeSuppliers.length>0&&grades.length>0;
- return <><PageHead eyebrow="PENGADAAN / BAHAN BAKU" title="Pembelian & Kelapa Masuk"
- description="Harga supplier, grade ketebalan, dan batch kelapa mentah yang diterima."/><Notice success={params.success} error={params.error}/>{params.success&&<p className="form-hint"><Link href="/qc">Penerimaan tersimpan. Lanjutkan pemeriksaan batch di QC →</Link></p>}
- <Panel title="1. Terima kelapa" detail="Harga terakhir otomatis · batch dibuat saat disimpan">
+ return <><PageHead eyebrow="PENGADAAN / BAHAN BAKU" title="Pembelian Kelapa + QC"
+ description="Catat grade A/B/C, harga berbeda, hasil lolos/afkir dan sisa belum QC dalam satu proses."/><Notice success={params.success} error={params.error}/>{params.success&&<p className="form-hint"><Link href="/qc">Pembelian berhasil. Jika QC belum selesai, lanjutkan pemeriksaan di QC →</Link></p>}
+ <Panel title="Pembelian sekaligus QC" detail="Multi-grade dan harga per butir · sisa QC tetap terlacak">
   {!ready&&<p className="form-hint">Siapkan minimal satu supplier dan grade. Pengaturan grade ada di bawah.</p>}
-  <CoconutReceiveForm suppliers={activeSuppliers} grades={grades} prices={latestPrices} requestKey={randomUUID()}/>
+  <GoPurchaseComposer suppliers={activeSuppliers} grades={grades} prices={latestPrices} requestKey={randomUUID()} date={today()}/>
  </Panel>
  <details className="edit-detail"><summary>Pengaturan lanjutan: grade & harga supplier</summary>
  <Panel title="Kategori ketebalan kelapa" detail="Buat standar ukuran dan kualitas yang mudah digunakan saat pembelian serta QC"><form action={addGradeAction} className="form-grid">
