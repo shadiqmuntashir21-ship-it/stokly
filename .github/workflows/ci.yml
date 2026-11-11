@@ -1,7 +1,7 @@
 name: STOKLY Development Checks
 on:
   push:
-    branches: [feat/pwa-foundation, feat/stokly-v3-operational-revision, feat/stokly-v4-operator-first, feat/stokly-owner-finance-archive, feat/stokly-kelapa-go-migration]
+    branches: [feat/pwa-foundation, feat/stokly-v3-operational-revision, feat/stokly-v4-operator-first, feat/stokly-owner-finance-archive, feat/stokly-kelapa-go-migration, feat/stokly-qc-no-batch-auto-sku]
   pull_request:
     branches: [main]
 permissions:

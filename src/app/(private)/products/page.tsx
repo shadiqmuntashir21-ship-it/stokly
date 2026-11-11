@@ -15,7 +15,7 @@ export default async function Products({searchParams}:{searchParams:Promise<{suc
  const writable=actor.role!=="marketing";
  return <><PageHead eyebrow="MASTER DATA / INVENTORY" title="Produk & Persediaan" description="Ubah produk, harga, stok dan riwayatnya langsung dari STOKLY."/><Notice success={params.success} error={params.error}/>
  {writable&&<Panel title="Tambah produk baru"><form action={productSave} className="form-grid">
-  <label>Kode SKU<input name="sku" maxLength={60} required placeholder="PRD-001"/></label>
+  <p className="form-hint wide">Kode produk dibuat otomatis oleh STOKLY saat disimpan. Admin tidak perlu mengisi SKU.</p>
   <label>Nama produk<input name="name" maxLength={160} required placeholder="Kelapa serut"/></label>
   <label>Kategori<input name="category" defaultValue="Kelapa" required maxLength={90}/></label>
   <label>Satuan<select name="unit" defaultValue="PCS">{["PCS","BUTIR","KG","LITER","CUP","PACK"].map(x=><option key={x} value={x}>{x}</option>)}</select></label>
@@ -32,7 +32,7 @@ export default async function Products({searchParams}:{searchParams:Promise<{suc
    <div className="edit-forms">
     <form action={productSave} className="mini-form">
      <h3>Edit produk</h3><input type="hidden" name="id" value={p.id}/>
-     <label>SKU<input name="sku" defaultValue={p.sku} required/></label>
+     <p className="form-hint">Kode internal: {p.sku} (otomatis, tidak perlu diedit)</p>
      <label>Nama<input name="name" defaultValue={p.name} required/></label>
      <label>Kategori<input name="category" defaultValue={p.category}/></label>
      <label>Satuan<select name="unit" defaultValue={p.unit}>{["PCS","BUTIR","KG","LITER","CUP","PACK"].map(x=><option key={x}>{x}</option>)}</select></label>

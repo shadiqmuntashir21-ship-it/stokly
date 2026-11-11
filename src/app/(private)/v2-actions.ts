@@ -8,7 +8,7 @@ const v=(f:FormData,k:string)=>String(f.get(k)||"");
 const n=(f:FormData,k:string)=>Number(f.get(k));
 export async function productSave(f:FormData){
  const a=await requireActor(["owner","admin"]);
- await safeWrite("/products",()=>saveProduct({id:v(f,"id")||undefined,sku:v(f,"sku"),name:v(f,"name"),category:v(f,"category"),unit:v(f,"unit"),description:v(f,"description"),minStock:n(f,"minStock")},a.id));
+ await safeWrite("/products",()=>saveProduct({id:v(f,"id")||undefined,name:v(f,"name"),category:v(f,"category"),unit:v(f,"unit"),description:v(f,"description"),minStock:n(f,"minStock")},a.id));
  revalidatePath("/products");redirect("/products?success=1");
 }
 export async function productPrice(f:FormData){
