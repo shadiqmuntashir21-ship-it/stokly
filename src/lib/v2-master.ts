@@ -45,8 +45,9 @@ export async function saveProduct(data:{id?:string;name:string;category:string;u
    await c.query("SELECT pg_advisory_xact_lock(hashtext('stokly:product:sku:generate'))");
    const latest=await c.query<{last_number:string}>(
     "SELECT COALESCE(MAX(substring(sku from '^PRD-([0-9]+)$')::bigint),0)::text AS last_number FROM products WHERE sku ~ '^PRD-[0-9]+$'");
-   const next=BigInt(latest.rows[0]?.last_number||"0")+1n;
-   const sku="PRD-"+next.toString().padStart(3,"0");
+   const next=Number(latest.rows[0]?.last_number||"0")+1;
+   if(!Number.isSafeInteger(next))throw new BusinessError("Penomoran produk telah mencapai batas aman.");
+   const sku="PRD-"+String(next).padStart(3,"0");
    const inserted=await c.query<{id:string}>(
     "INSERT INTO products(sku,name,category,unit,description,min_stock,price) VALUES($1,$2,$3,$4,$5,$6,0) RETURNING id",
     [sku,clean(data.name),clean(data.category,90)||"Umum",data.unit,clean(data.description,1000),data.minStock]);
