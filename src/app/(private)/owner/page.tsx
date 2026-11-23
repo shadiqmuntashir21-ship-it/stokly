@@ -16,7 +16,7 @@ export default async function OwnerHome({searchParams}:{searchParams:Promise<{fr
  await requireOwner();
  const p=await searchParams;
  const period=p.all==="1"?parsePeriod():parsePeriod(p.from||currentMonth(),p.to);
- const [money,outlets,operations,cost,days,go]=await Promise.all([
+ const [money,outlets,operations,cost,days,go,reconciliation]=await Promise.all([
   ownerMoney(period),ownerOutlets(period),ownerOperations(),ownerCostReadiness(),
   query<Day>(`SELECT d.delivered_on::text AS day,SUM(i.gross)::text AS gross,
     SUM(COALESCE((SELECT SUM(r.credit_amount) FROM delivery_returns r WHERE r.delivery_id=d.id),0))::text AS credit
@@ -24,7 +24,10 @@ export default async function OwnerHome({searchParams}:{searchParams:Promise<{fr
     WHERE ($1::date IS NULL OR d.delivered_on>=$1) AND ($2::date IS NULL OR d.delivered_on<=$2)
     GROUP BY d.delivered_on ORDER BY d.delivered_on DESC LIMIT 14`,[period.from,period.to]),
   query<{receipts:number;gross:string;unpaid:string;cash:string;assets:number;unpriced_products:number}>(
-   "SELECT (SELECT COUNT(*)::int FROM legacy_receipts) receipts,(SELECT COALESCE(SUM(gross-return_value),0)::text FROM legacy_receipts) gross,(SELECT COALESCE(SUM(confirmed_due),0)::text FROM v_go_unpaid_current) unpaid,(SELECT recorded_balance::text FROM legacy_cash_entries WHERE recorded_balance IS NOT NULL ORDER BY source_row DESC LIMIT 1) cash,(SELECT COUNT(*)::int FROM inventory_assets) assets,(SELECT COUNT(*)::int FROM products WHERE active=true AND category<>'Afkir' AND price<=0) unpriced_products")
+   "SELECT (SELECT COUNT(*)::int FROM legacy_receipts) receipts,(SELECT COALESCE(SUM(gross-return_value),0)::text FROM legacy_receipts) gross,(SELECT COALESCE(SUM(confirmed_due),0)::text FROM v_go_unpaid_current) unpaid,(SELECT recorded_balance::text FROM legacy_cash_entries WHERE recorded_balance IS NOT NULL ORDER BY source_row DESC LIMIT 1) cash,(SELECT COUNT(*)::int FROM inventory_assets) assets,(SELECT COUNT(*)::int FROM products WHERE active=true AND category<>'Afkir' AND price<=0) unpriced_products"),
+  query<{receipt_review:number;cash_review:number;stock_review:number}>(
+   "SELECT (SELECT COUNT(*)::int FROM legacy_receipts WHERE status='PARTIAL' OR notes LIKE 'Berdasarkan Excel terbaru KWITANSI%' OR notes LIKE 'Perlu verifikasi selisih kas:%') AS receipt_review, (SELECT COUNT(*)::int FROM legacy_source_rows s WHERE s.source_sheet='KAS KECIL' AND s.source_row BETWEEN 1388 AND 1428 AND NOT EXISTS(SELECT 1 FROM legacy_cash_entries c WHERE c.source_row=s.source_row)) AS cash_review, (SELECT COUNT(*)::int FROM legacy_stock_snapshots WHERE status='PENDING_RECONCILIATION') AS stock_review")
+
  ]);
  const ranking=[...outlets].sort((a,b)=>(Number(b.gross)-Number(b.credits))-(Number(a.gross)-Number(a.credits))).slice(0,5);
  const max=Math.max(1,...days.map(d=>Math.max(0,Number(d.gross)-Number(d.credit))));
@@ -54,6 +57,15 @@ export default async function OwnerHome({searchParams}:{searchParams:Promise<{fr
    <Link href="/owner?all=1">Lihat seluruh waktu</Link>
   </form>
  </Panel>
+ {(reconciliation[0]?.receipt_review||reconciliation[0]?.cash_review||reconciliation[0]?.stock_review)?<Panel title="Perlu rekonsiliasi data Excel" detail="Tidak ada transaksi yang digandakan atau saldo yang ditebak">
+  <div style={{padding:18}}>
+   <p><strong>{reconciliation[0]?.receipt_review||0}</strong> kuitansi perlu pemeriksaan nominal, pembayaran parsial, atau selisih kas.</p>
+   <p><strong>{reconciliation[0]?.cash_review||0}</strong> baris kas masih disimpan sebagai sumber audit dan belum dibukukan karena arah debit/kredit tidak konsisten.</p>
+   <p><strong>{reconciliation[0]?.stock_review||0}</strong> snapshot stok historis belum terverifikasi per jenis/grade. Stok aktif tidak otomatis ditambah.</p>
+   <p className="form-hint">Saldo kas historis bukan saldo final sebelum rekonsiliasi selesai. Periksa rincian pada laporan historis dan kas kecil.</p>
+   <p><Link href="/owner/legacy">Periksa laporan historis →</Link> · <Link href="/cash">Periksa kas →</Link> · <Link href="/products">Periksa stok →</Link></p>
+  </div>
+ </Panel>:null}
  <div className="metrics-grid">{cards.map(c=><Link key={c.title} href={c.href} className="metric" style={{textDecoration:"none",color:"inherit",display:"block"}}>
   <div className="metric-label">{c.title}</div><strong>{c.value}</strong><span className="dashboard-stat-foot">Lihat detail →</span>
  </Link>)}</div>
