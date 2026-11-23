@@ -10,6 +10,8 @@ const rp=(n:number)=>new Intl.NumberFormat("id-ID",{style:"currency",currency:"I
 export function OrderComposer({products,outlets,requestKey,canOverride,numberReady,initialOutlet="",initialItems=[]}:{products:Product[];outlets:Outlet[];requestKey:string;canOverride:boolean;numberReady:boolean;initialOutlet?:string;initialItems?:Item[]}){
  const [items,setItems]=useState<Item[]>(initialItems.length?initialItems:[{productId:"",quantity:1,unitPrice:null}]);
  const [outlet,setOutlet]=useState(initialOutlet);
+ const [outletSearch,setOutletSearch]=useState("");
+ const visibleOutlets=outlets.filter(x=>x.active&&(x.id===outlet||x.name.toLocaleLowerCase("id-ID").includes(outletSearch.trim().toLocaleLowerCase("id-ID"))));
  const [reason,setReason]=useState("");
  const master=(id:string)=>Number(products.find(p=>p.id===id)?.price??0);
  const changed=items.some(x=>x.productId&&x.unitPrice!==null&&Math.round(x.unitPrice*100)!==Math.round(master(x.productId)*100));
@@ -21,7 +23,7 @@ export function OrderComposer({products,outlets,requestKey,canOverride,numberRea
  <input type="hidden" name="items" value={JSON.stringify(items)}/>
  {!numberReady&&<p className="form-hint" role="alert">Nomor nota belum aktif. Simpan Order akan ditolak sampai Owner mengaktifkannya; tidak ada order tanpa nomor.</p>}
  <div className="form-grid">
-  <label>Outlet<select name="outletId" required value={outlet} onChange={e=>setOutlet(e.target.value)}><option value="" disabled>Pilih outlet</option>{outlets.filter(x=>x.active).map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
+  <div><label>Cari outlet<input type="search" autoComplete="off" placeholder="Ketik nama outlet, misalnya SIDRAP" value={outletSearch} onChange={e=>setOutletSearch(e.target.value)}/></label><label>Outlet<select name="outletId" required value={outlet} onChange={e=>setOutlet(e.target.value)}><option value="" disabled>Pilih outlet hasil pencarian</option>{visibleOutlets.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>{visibleOutlets.length===0&&<p role="status" className="form-hint">Outlet tidak ditemukan. Coba kata lain.</p>}</div>
   <label>Jadwal pengiriman<input name="deliveryDate" type="date"/></label>
   <label className="wide">Catatan order<input name="note" maxLength={400} placeholder="Instruksi outlet"/></label>
  </div>
