@@ -33,4 +33,16 @@ test("Kas Kecil dan Kas Besar tidak saling tercampur",async()=>{
  assert.match(page,/Sumber uang/);
 });
 
-test("Inventaris cari nama¶»§q«^
+test("Inventaris cari nama dan wajib outlet saat dipinjamkan",async()=>{
+ const page=await read("src/app/(private)/inventory/page.tsx");
+ const form=await read("src/components/inventory-movement-form.tsx");
+ assert.match(page,/InventorySearch/);
+ assert.match(form,/required=\{needsOutlet\}/);
+});
+test("Piutang hanya dikoreksi dengan audit bukan pembayaran palsu",async()=>{
+ const ledger=await read("src/lib/legacy-payments.ts");
+ const action=await read("src/app/(private)/invoices/legacy/actions.ts");
+ assert.match(ledger,/legacy_receipt_balance_reviews/);
+ assert.match(action,/requireOwner/);
+ assert.match(ledger,/input.reason.trim\(\).length<10/);
+});

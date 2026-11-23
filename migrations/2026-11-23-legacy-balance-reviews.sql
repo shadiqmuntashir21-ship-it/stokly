@@ -24,4 +24,20 @@ WITH p AS (
  UPPER(COALESCE(r.original->>7,'')) AS original_status,
  rlatest.new_due,rlatest.payments_at_review,rlatest.document_number AS reviewed_number
  FROM public.legacy_receipts r
- LEFT JOIN p ON p.document_numb¶»§q«^
+ LEFT JOIN p ON p.document_number=r.document_number
+ LEFT JOIN rlatest ON rlatest.document_number=r.document_number
+), reviewed AS (
+ SELECT s.*,
+ CASE
+  WHEN reviewed_number IS NOT NULL THEN GREATEST(0,new_due-GREATEST(0,new_payments-payments_at_review))
+  WHEN original_status='PAID' THEN 0::numeric
+  WHEN original_status='UNPAID' THEN GREATEST(0,final_amount-new_payments)
+  ELSE NULL::numeric
+ END AS due_now
+ FROM s
+)
+SELECT document_number,issued_on,outlet_name,quantity,gross,return_value,final_amount,status,
+ new_payments,original_status,due_now AS confirmed_due,
+ (reviewed_number IS NULL AND original_status <> ALL (ARRAY['PAID','UNPAID'])) AS needs_reconciliation
+FROM reviewed
+WHERE (due_now>0 OR due_now IS NULL) AND (reviewed_number IS NOT NULL OR original_status<>'PAID');

@@ -12,4 +12,12 @@ export function InventorySearch({assets,baskets}:{assets:Asset[];baskets:Basket[
   <label className="wide">Cari aset, keranjang, atau outlet<input type="search" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Ketik nama aset, keranjang, atau outlet..."/></label>
   <p className="form-hint">Hasil: {filtered.length} jenis inventaris Â· {old.length} catatan keranjang</p>
   <div className="table-wrap"><table><thead><tr><th>Barang</th><th>Dimiliki</th><th>Dipinjam</th><th>Rusak</th><th>Tersedia (perkiraan)</th><th>Nilai historis</th></tr></thead><tbody>
-  {filtered.map(x=><tr key={x.id}><td>{x.name}</td><td>{x.quantity}</td><td>{x.loaned}</td><td>{x.damaged}</td><td>{Math.max(0,x.quantity-x.loaned-x.damag¶»§q«^
+  {filtered.map(x=><tr key={x.id}><td>{x.name}</td><td>{x.quantity}</td><td>{x.loaned}</td><td>{x.damaged}</td><td>{Math.max(0,x.quantity-x.loaned-x.damaged)}</td><td>{rupiah(x.total_cost??0)}</td></tr>)}
+  </tbody></table></div>
+  <h3>Riwayat Keranjang KELAPA GO (referensi)</h3>
+  <div className="table-wrap"><table><thead><tr><th>Jenis</th><th>Outlet</th><th>Jumlah</th><th>Saldo tertulis</th><th>Catatan</th></tr></thead><tbody>
+  {old.map(x=><tr key={x.source_row}><td>{x.basket_type||"â€”"}</td><td>{x.outlet_name||"â€”"}</td><td>{x.quantity??"â€”"}</td><td>{x.reported_balance??"â€”"}</td><td>{x.note||"â€”"}</td></tr>)}
+  </tbody></table></div>
+  <p className="form-hint">Catatan lama bukan peminjaman baru otomatis. Cocokkan fisik sebelum dipakai sebagai saldo.</p>
+ </>;
+}

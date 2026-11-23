@@ -13,4 +13,23 @@ type Basket={source_row:number;basket_type:string|null;outlet_name:string|null;q
 export default async function Inventory({searchParams}:{searchParams:Promise<{success?:string;error?:string}>}){
  await requireActor(["owner","admin"]);
  const [assets,moves,old,outlets,p]=await Promise.all([
-  query<Asset>("SELECT a.id::text,a.name,a.quantity,a.unit_price::text,a.total_cost::text,COALESCE((SELECT SUM(CASE WHEN kind='OUT' THEN quantity WHEN kind='RETURN' THEN -quantity ELSE 0 END) FROM inventory_asset_movements m WHERE m.asset_id=a.id),0)::int loaned,COALESCE((SELECT SUM(quantity) FROM inventory_asset_movements m WHERE m.asset¶»§q«^
+  query<Asset>("SELECT a.id::text,a.name,a.quantity,a.unit_price::text,a.total_cost::text,COALESCE((SELECT SUM(CASE WHEN kind='OUT' THEN quantity WHEN kind='RETURN' THEN -quantity ELSE 0 END) FROM inventory_asset_movements m WHERE m.asset_id=a.id),0)::int loaned,COALESCE((SELECT SUM(quantity) FROM inventory_asset_movements m WHERE m.asset_id=a.id AND kind='DAMAGED'),0)::int damaged FROM inventory_assets a ORDER BY a.name LIMIT 300"),
+  query<Movement>("SELECT m.movement_date::text,m.kind,m.quantity,a.name asset,o.name outlet FROM inventory_asset_movements m JOIN inventory_assets a ON a.id=m.asset_id LEFT JOIN outlets o ON o.id=m.outlet_id ORDER BY m.created_at DESC LIMIT 100"),
+  query<Basket>("SELECT source_row,basket_type,outlet_name,quantity,reported_balance,note FROM legacy_basket_movements ORDER BY source_row LIMIT 100"),
+  query<{id:string;name:string}>("SELECT id::text,name FROM outlets WHERE active=true ORDER BY name LIMIT 300"),
+  searchParams
+ ]);
+ return <>
+ <PageHead eyebrow="ADMIN / ASET USAHA" title="Inventaris & Keranjang" description="Pelacakan aset, jumlah yang dimiliki, peminjaman ke outlet, barang kembali, rusak, dan hilang."/><Notice success={p.success} error={p.error}/>
+ <div className="metrics-grid"><section className="metric"><div className="metric-label">Jenis aset</div><strong>{assets.length}</strong></section>
+ <section className="metric"><div className="metric-label">Unit tercatat</div><strong>{assets.reduce((n,x)=>n+x.quantity,0)}</strong></section>
+ <section className="metric"><div className="metric-label">Unit dipinjam</div><strong>{assets.reduce((n,x)=>n+Math.max(0,x.loaned),0)}</strong></section></div>
+ <Panel title="Tambah jenis inventaris"><form action={newAssetAction} className="form-grid"><label>Nama aset<input name="name" minLength={2} maxLength={150} required/></label>
+ <label>Jumlah awal<input name="quantity" type="number" min="0" step="1" required/></label>
+ <label className="wide">Keterangan<input name="note" maxLength={400}/></label><SubmitButton className="primary-button">Simpan Aset</SubmitButton></form></Panel>
+ <Panel title="Catat pergerakan aset dan keranjang"><InventoryMovementForm assets={assets} outlets={outlets} today={today()}/></Panel>
+ <Panel title="Pencarian inventaris & keranjang"><InventorySearch assets={assets} baskets={old}/></Panel>
+ <Panel title="Riwayat peminjaman / pengembalian"><div className="table-wrap"><table><thead><tr><th>Tanggal</th><th>Barang</th><th>Jenis</th><th>Jumlah</th><th>Outlet</th></tr></thead><tbody>
+ {moves.map((x,i)=><tr key={i}><td>{x.movement_date}</td><td>{x.asset}</td><td>{x.kind}</td><td>{x.quantity}</td><td>{x.outlet||"â€”"}</td></tr>)}</tbody></table></div></Panel>
+ </>;
+}
