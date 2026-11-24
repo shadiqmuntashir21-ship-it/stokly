@@ -13,9 +13,9 @@ export default async function Products({searchParams}:{searchParams:Promise<{suc
   "SELECT p.name,h.price::text,h.reason,h.created_at FROM product_price_history h JOIN products p ON p.id=h.product_id WHERE h.outlet_id IS NULL ORDER BY h.created_at DESC LIMIT 15")
  ]);
  const writable=actor.role!=="marketing";
- return <><PageHead eyebrow="MASTER DATA / INVENTORY" title="Produk & Persediaan" description="Ubah produk, harga, stok dan riwayatnya langsung dari STOKLY."/><Notice success={params.success} error={params.error}/>
+ return <><PageHead eyebrow="MASTER DATA / INVENTORY" title="Produk & Persediaan" description="Ubah produk, harga, stok dan riwayatnya langsung dari KELAPA GO."/><Notice success={params.success} error={params.error}/>
  {writable&&<Panel title="Tambah produk baru"><form action={productSave} className="form-grid">
-  <p className="form-hint wide">Kode produk dibuat otomatis oleh STOKLY saat disimpan. Admin tidak perlu mengisi SKU.</p>
+  <p className="form-hint wide">Kode produk dibuat otomatis oleh KELAPA GO saat disimpan. Admin tidak perlu mengisi SKU.</p>
   <label>Nama produk<input name="name" maxLength={160} required placeholder="Kelapa serut"/></label>
   <label>Kategori<input name="category" defaultValue="Kelapa" required maxLength={90}/></label>
   <label>Satuan<select name="unit" defaultValue="PCS">{["PCS","BUTIR","KG","LITER","CUP","PACK"].map(x=><option key={x} value={x}>{x}</option>)}</select></label>

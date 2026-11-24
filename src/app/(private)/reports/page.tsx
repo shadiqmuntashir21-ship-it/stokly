@@ -21,7 +21,7 @@ export default async function Reports({searchParams}:{searchParams:Promise<{from
    "SELECT p.name,m.quantity_delta,m.source_type,m.created_at FROM stock_movements m JOIN products p ON p.id=m.product_id WHERE ($1::date IS NULL OR (m.created_at AT TIME ZONE 'Asia/Makassar')::date>=$1::date) AND ($2::date IS NULL OR (m.created_at AT TIME ZONE 'Asia/Makassar')::date<=$2::date) ORDER BY m.created_at DESC LIMIT 80",dates)
  ]);
  const gross=Number(receipts[0]?.gross||0),credit=Number(receipts[0]?.credit||0),paid=Number(receipts[0]?.paid||0);
- return <><PageHead eyebrow="LAPORAN / TERPADU" title="Laporan Usaha" description="Pisahkan penjualan outlet STOKLY V4 dan transaksi kasir lama. Semua angka bisa ditelusuri."/>
+ return <><PageHead eyebrow="LAPORAN / TERPADU" title="Laporan Usaha" description="Pisahkan penjualan outlet KELAPA GO baru dan transaksi kasir lama. Semua angka bisa ditelusuri."/>
  <Panel title="Filter periode">
   <form method="get" className="form-grid"><label>Dari tanggal<input type="date" name="from" defaultValue={from||""}/></label><label>Sampai tanggal<input type="date" name="to" defaultValue={to||""}/></label><button className="primary-button" type="submit">Terapkan Filter</button></form>
   <p className="form-hint">Tanggal mengikuti WITA (Palu). Retur dikaitkan ke pengiriman asal; uang diterima mengikuti tanggal pembayaran aktual.</p>

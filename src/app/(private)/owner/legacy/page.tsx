@@ -39,8 +39,8 @@ export default async function KelapaGoHistory({searchParams}:{searchParams:Promi
   <section className="metric"><div className="metric-label">Piutang terkonfirmasi</div><strong>{rupiah(summary.stat.unpaid_amount)}</strong></section>
   <section className="metric"><div className="metric-label">Stok historis terakhir*</div><strong>{stock[0]?.quantity??"—"} butir</strong></section>
  </div>
- <Panel title="Pivot UNPAID — otomatis" detail="Dihitung dari KWITANSI dan pembayaran yang sudah dicatat dalam STOKLY">
-  <p className="form-hint">Kuitansi UNPAID yang sudah dibayar melalui STOKLY langsung berkurang dari daftar ini. Kuitansi status PARTIAL/blank memerlukan rekonsiliasi karena jumlah pembayaran lama belum diketahui secara pasti.</p>
+ <Panel title="Pivot UNPAID — otomatis" detail="Dihitung dari KWITANSI dan pembayaran yang sudah dicatat dalam KELAPA GO">
+  <p className="form-hint">Kuitansi UNPAID yang sudah dibayar melalui KELAPA GO langsung berkurang dari daftar ini. Kuitansi status PARTIAL/blank memerlukan rekonsiliasi karena jumlah pembayaran lama belum diketahui secara pasti.</p>
   <p><Link href="/invoices/legacy">Lihat, cari dan catat pembayaran kuitansi lama →</Link></p>
   <div className="table-wrap"><table><thead><tr><th>Nota</th><th>Outlet</th><th>Tanggal</th><th>Sisa pasti</th><th>Status</th></tr></thead><tbody>
    {summary.unpaid.slice(0,35).map(x=><tr key={x.document_number}><td>{x.document_number}</td><td>{x.outlet_name}</td><td>{x.issued_on||"—"}</td><td>{x.needs_reconciliation?"Perlu cek":rupiah(x.confirmed_due??0)}</td><td>{x.status}</td></tr>)}

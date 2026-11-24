@@ -1,5 +1,5 @@
 export default function Loading(){
- return <div className="page-skeleton" aria-busy="true" aria-label="Memuat data STOKLY" role="status">
+ return <div className="page-skeleton" aria-busy="true" aria-label="Memuat data KELAPA GO" role="status">
   <div className="skeleton-topline skeleton-shimmer"/>
   <div className="skeleton-heading skeleton-shimmer"/>
   <div className="skeleton-subheading skeleton-shimmer"/>

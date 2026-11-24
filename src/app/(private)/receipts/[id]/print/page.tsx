@@ -21,7 +21,7 @@ export default async function PrintReceipt({params}:{params:Promise<{id:string}>
  return <main className="print-receipt" style={{maxWidth:780,margin:"20px auto",padding:32,background:"#fff",color:"#172319",fontFamily:"Arial, sans-serif"}}>
   <div className="print-actions"><Link href="/invoices">Kembali ke Kwitansi</Link><p>Gunakan Ctrl+P / Cmd+P untuk mencetak atau menyimpan sebagai PDF.</p></div>
   <header style={{display:"flex",justifyContent:"space-between",gap:24,borderBottom:"2px solid #285b46",marginBottom:24}}>
-    <h1>STOKLY.</h1><div style={{textAlign:"right"}}><strong>KWITANSI / NOTA OUTLET</strong><p>No. {order.document_number||"BELUM DIREKONSILIASI"}</p></div>
+    <div style={{display:"flex",alignItems:"center",gap:10}}><img src="/brand/kelapa-go-symbol.svg" alt="Logo KELAPA GO" width="44" height="44"/><h1 style={{fontSize:28}}>KELAPA GO</h1></div><div style={{textAlign:"right"}}><strong>KWITANSI / NOTA OUTLET</strong><p>No. {order.document_number||"BELUM DIREKONSILIASI"}</p></div>
   </header>
   <section style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:25}}>
     <p><b>Outlet:</b> {order.outlet}</p><p><b>G.O:</b> {order.group_name}</p>
@@ -38,7 +38,7 @@ export default async function PrintReceipt({params}:{params:Promise<{id:string}>
     <p>Terbayar: <strong>{rupiah(paid)}</strong></p>
     <h3>Sisa Piutang: {rupiah(Math.max(0,net-paid))}</h3>
   </section>
-  <p style={{marginTop:65,fontSize:12}}>Dihasilkan oleh STOKLY dari barang terkirim dan transaksi retur/pembayaran tercatat.</p>
+  <p style={{marginTop:65,fontSize:12}}>Dihasilkan oleh KELAPA GO dari barang terkirim dan transaksi retur/pembayaran tercatat.</p>
   <style>{"@media print {.print-actions{display:none!important}.print-receipt{margin:0!important;padding:0!important;max-width:none!important}body{background:white!important}}"}</style>
  </main>;
 }

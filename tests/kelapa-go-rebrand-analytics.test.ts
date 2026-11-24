@@ -39,3 +39,20 @@ test("UUID validation recognizes the complete five-group shape",async()=>{
  const files=["src/lib/order-operations.ts","src/lib/legacy-payments.ts","src/lib/receipt-reconciliation.ts"];
  for(const f of files){const s=await source(f);assert.match(s,/\[a-f0-9\]\{8\}-\[a-f0-9\]\{4\}-\[a-f0-9\]\{4\}-\[a-f0-9\]\{4\}-\[a-f0-9\]\{12\}/);}
 });
+test("secondary pages, printed receipts and archives consistently use KELAPA GO",async()=>{
+ const paths=[
+ "src/app/(private)/cash/page.tsx","src/app/(private)/error.tsx",
+ "src/app/(private)/invoices/legacy/page.tsx",
+ "src/app/(private)/invoices/notes/[id]/print/page.tsx",
+ "src/app/(private)/loading.tsx","src/app/(private)/owner/legacy/page.tsx",
+ "src/app/(private)/owner/oversight/page.tsx",
+ "src/app/(private)/owner/receipts/page.tsx",
+ "src/app/(private)/products/page.tsx",
+ "src/app/(private)/receipts/[id]/print/page.tsx",
+ "src/app/(private)/reports/page.tsx","src/app/(private)/search/page.tsx",
+ "src/app/api/owner/archive/[year]/route.ts"
+ ];
+ for(const p of paths){const c=await source(p);assert.doesNotMatch(c,/STOKLY|Kelapa Branding Indonesia/,p);}
+ const printable=await source("src/app/(private)/receipts/[id]/print/page.tsx");
+ assert.match(printable,/kelapa-go-symbol\.svg/);
+});

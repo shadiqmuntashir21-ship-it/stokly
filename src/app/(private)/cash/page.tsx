@@ -20,14 +20,14 @@ export default async function Cash({searchParams}:{searchParams:Promise<{success
   query<{last_balance:string|null;pending:number}>("SELECT (SELECT recorded_balance::text FROM legacy_cash_entries WHERE recorded_balance IS NOT NULL ORDER BY source_row DESC LIMIT 1) last_balance,(SELECT COUNT(*)::int FROM legacy_source_rows s WHERE s.source_sheet='KAS KECIL' AND s.source_row BETWEEN 1388 AND 1428 AND NOT EXISTS(SELECT 1 FROM legacy_cash_entries e WHERE e.source_row=s.source_row)) pending")
  ]);
  return <>
- <PageHead eyebrow="ADMIN / ARUS KAS" title="Kas Kecil & Kas Besar" description="Saldo operasional dihitung dari saldo awal terverifikasi dan transaksi STOKLY baru. Arsip KELAPA GO terpisah."/>
+ <PageHead eyebrow="ADMIN / ARUS KAS" title="Kas Kecil & Kas Besar" description="Saldo operasional dihitung dari saldo awal terverifikasi dan transaksi KELAPA GO baru. Arsip KELAPA GO terpisah."/>
  <Notice success={p.success} error={p.error}/>
- <Panel title="Kas operasional STOKLY" detail="Saldo awal tidak diambil dari Excel">
+ <Panel title="Kas operasional KELAPA GO" detail="Saldo awal tidak diambil dari Excel">
   <div className="metrics-grid">{wallets.map(w=><section key={w.wallet} className="metric"><div className="metric-label">{w.wallet==="SMALL"?"Kas Kecil":"Kas Besar"}</div><strong>{w.balance===null?"Belum ditetapkan":rupiah(w.balance)}</strong><div className="form-hint">Saldo awal: {w.opening===null?"Perlu konfirmasi Owner":rupiah(w.opening)}<br/>Masuk: {rupiah(w.incoming)}<br/>Keluar: {rupiah(w.outgoing)}<br/>Mutasi bersih: {rupiah(Number(w.incoming)-Number(w.outgoing))}</div></section>)}</div>
   {actor.role==="owner"&&wallets.filter(w=>w.opening===null).map(w=><form key={w.wallet} action={openingCashAction} className="form-grid">
    <input type="hidden" name="wallet" value={w.wallet}/>
    <RupiahField name="amount" label={"Tetapkan saldo awal "+(w.wallet==="SMALL"?"Kas Kecil":"Kas Besar")+" (Rp)"} allowZero requireEntry/>
-   <label>Keterangan sumber saldo<input name="reason" required minLength={5} maxLength={400} placeholder="Hasil hitung tunai / saldo rekening sebelum transaksi STOKLY"/></label>
+   <label>Keterangan sumber saldo<input name="reason" required minLength={5} maxLength={400} placeholder="Hasil hitung tunai / saldo rekening sebelum transaksi KELAPA GO"/></label>
    <p className="form-hint wide">Isi saldo sebelum transaksi operasional pertama; ketik 0 jika memang nol. Hanya dapat ditetapkan sekali. Tidak dianggap pendapatan.</p>
    <SubmitButton className="primary-button">Tetapkan saldo awal</SubmitButton>
   </form>)}

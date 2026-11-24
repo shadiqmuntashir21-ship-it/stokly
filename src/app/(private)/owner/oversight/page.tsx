@@ -23,7 +23,7 @@ export default async function OwnerOversight(){
   <p><Link href="/invoices">Buka pembayaran dan selesaikan kewajiban refund →</Link></p>
  </Panel>
  <Panel title="Riwayat penomoran kwitansi lama">
-  {reconciliations.length?<div className="table-wrap"><table><thead><tr><th>Nomor</th><th>Metode</th><th>Waktu WITA</th></tr></thead><tbody>{reconciliations.map((x,i)=><tr key={i}><td>{x.document_number}</td><td>{x.method==="new_sequence"?"Nomor baru STOKLY":"Nomor fisik lama"}</td><td>{new Date(x.created_at).toLocaleString("id-ID",{timeZone:"Asia/Makassar"})}</td></tr>)}</tbody></table></div>:<p className="form-hint">Belum ada rekonsiliasi.</p>}
+  {reconciliations.length?<div className="table-wrap"><table><thead><tr><th>Nomor</th><th>Metode</th><th>Waktu WITA</th></tr></thead><tbody>{reconciliations.map((x,i)=><tr key={i}><td>{x.document_number}</td><td>{x.method==="new_sequence"?"Nomor baru KELAPA GO":"Nomor fisik lama"}</td><td>{new Date(x.created_at).toLocaleString("id-ID",{timeZone:"Asia/Makassar"})}</td></tr>)}</tbody></table></div>:<p className="form-hint">Belum ada rekonsiliasi.</p>}
   <p><Link href="/owner/receipts">Kelola nomor kwitansi yang belum tercatat →</Link></p>
  </Panel>
  <Panel title="Aktivitas aplikasi terbaru"><div className="table-wrap"><table><thead><tr><th>Waktu WITA</th><th>Aksi</th><th>Jenis data</th><th>Akses sistem</th></tr></thead>

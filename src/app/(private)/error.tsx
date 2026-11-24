@@ -2,7 +2,7 @@
 import {useEffect} from "react";
 import Link from "next/link";
 export default function AppError({error,reset}:{error:Error&{digest?:string};reset:()=>void}){
- useEffect(()=>{console.error("STOKLY page error",error.digest||"unknown");},[error.digest]);
+ useEffect(()=>{console.error("KELAPA GO page error",error.digest||"unknown");},[error.digest]);
  return <section className="panel" style={{padding:35}}>
   <h1>Halaman belum berhasil dimuat</h1>
   <p className="muted">Data yang telah tersimpan tidak otomatis hilang. Periksa koneksi dan coba lagi. Jika kesalahan terjadi saat menyimpan, periksa riwayat transaksi sebelum mengulang.</p>

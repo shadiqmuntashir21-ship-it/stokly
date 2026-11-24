@@ -19,7 +19,7 @@ export async function GET(_request:Request,{params}:{params:Promise<{year:string
   });
   return new Response(stream,{headers:{
    "Content-Type":"application/zip",
-   "Content-Disposition":'attachment; filename="STOKLY-Arsip-'+year+'.zip"',
+   "Content-Disposition":'attachment; filename="KELAPA-GO-Arsip-'+year+'.zip"',
    "Cache-Control":"private, no-store, max-age=0",
    "X-Content-Type-Options":"nosniff"
   }});

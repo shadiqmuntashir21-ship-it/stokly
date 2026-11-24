@@ -18,14 +18,14 @@ export default async function PrintNote({params}:{params:Promise<{id:string}>}){
  return <main className="print-receipt" style={{maxWidth:760,margin:"20px auto",padding:30,background:"#fff",color:"#172319",fontFamily:"Arial,sans-serif"}}>
  <div className="print-actions"><Link href="/invoices/notes">Kembali</Link><p>Cetak dengan Ctrl+P / Cmd+P</p></div>
  <header style={{display:"flex",justifyContent:"space-between",borderBottom:"2px solid #285b46",paddingBottom:15}}>
-  <h1>STOKLY.</h1><div style={{textAlign:"right"}}><strong>KWITANSI PENGIRIMAN</strong><p>No. {h.document_number}</p></div>
+  <div style={{display:"flex",alignItems:"center",gap:10}}><img src="/brand/kelapa-go-symbol.svg" alt="Logo KELAPA GO" width="44" height="44"/><h1 style={{fontSize:28}}>KELAPA GO</h1></div><div style={{textAlign:"right"}}><strong>KWITANSI PENGIRIMAN</strong><p>No. {h.document_number}</p></div>
  </header>
  <p><strong>Outlet:</strong> {h.outlet}</p><p><strong>Alamat:</strong> {h.address}</p><p><strong>Tanggal kirim:</strong> {h.delivered_on}</p>
  <table style={{width:"100%",borderCollapse:"collapse",marginTop:20}}><thead><tr><th style={{textAlign:"left"}}>Produk</th><th>Jumlah</th><th>Harga</th><th>Total</th></tr></thead><tbody>
  {lines.map((x,i)=><tr key={i}><td style={{padding:8,borderBottom:"1px solid #ddd"}}>{x.name}</td><td>{x.quantity} {x.unit}</td><td>{rupiah(x.unit_price)}</td><td>{rupiah(x.quantity*Number(x.unit_price))}</td></tr>)}
  </tbody></table>
  <div style={{textAlign:"right",marginTop:24}}><p>Bruto: {rupiah(h.gross)}</p><p>Retur: {rupiah(h.retur)}</p><p>Tagihan: <strong>{rupiah(net)}</strong></p><p>Terbayar: {rupiah(h.paid)}</p><p><strong>Sisa: {rupiah(Math.max(0,net-Number(h.paid)))}</strong></p></div>
- <p style={{marginTop:80,fontSize:12}}>Nota dibuat otomatis dari pengiriman di STOKLY. Simpan sebagai PDF atau cetak untuk outlet.</p>
+ <p style={{marginTop:80,fontSize:12}}>Nota dibuat otomatis dari pengiriman di KELAPA GO. Simpan sebagai PDF atau cetak untuk outlet.</p>
  <style>{"@media print {.print-actions{display:none!important}.print-receipt{margin:0!important;padding:0!important;max-width:none!important}body{background:white!important}}"}</style>
  </main>;
 }

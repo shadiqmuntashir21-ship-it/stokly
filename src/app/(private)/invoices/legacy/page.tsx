@@ -15,7 +15,7 @@ export default async function LegacyReceipts({searchParams}:{searchParams:Promis
  const chosen=data.unpaid.find(x=>x.document_number===p.number&&!x.needs_reconciliation&&Number(x.confirmed_due)>0);
  const review=data.unpaid.find(x=>x.document_number===p.number);
  return <>
-  <PageHead eyebrow="KWITANSI / DATA AWAL" title="Piutang & Nota Historis KELAPA GO" description="Rekap otomatis dari status pembayaran nota lama. Bukan transaksi baru. Tidak menggandakan order atau pengiriman di STOKLY."/>
+  <PageHead eyebrow="KWITANSI / DATA AWAL" title="Piutang & Nota Historis KELAPA GO" description="Rekap otomatis dari status pembayaran nota lama. Bukan transaksi baru. Tidak menggandakan order atau pengiriman di KELAPA GO."/>
   <Notice success={p.success} error={p.error}/>
   <div className="metrics-grid">
    <section className="metric"><div className="metric-label">Kwitansi historis</div><strong>{data.stat.receipts}</strong></section>
