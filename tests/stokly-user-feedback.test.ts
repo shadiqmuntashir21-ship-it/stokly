@@ -29,7 +29,8 @@ test("Kas Kecil dan Kas Besar tidak saling tercampur",async()=>{
  const payment=await read("src/lib/legacy-payments.ts");
  assert.match(service,/PENJUALAN TRANSFER/);
  assert.match(payment,/PENJUALAN TRANSFER/);
- assert.match(page,/category NOT LIKE 'KAS BESAR:%'/);
+ assert.match(page,/walletBalances/);
+ assert.match(await read("src/lib/operational-cash.ts"),/category LIKE 'KAS BESAR:%'/);
  assert.match(page,/Sumber uang/);
 });
 

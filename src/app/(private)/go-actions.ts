@@ -2,6 +2,7 @@
 import {randomUUID} from "node:crypto";
 import {requireActor,requireOwner} from "@/lib/access";
 import {safeWrite} from "@/lib/safe-action";
+import {setOpeningBalance} from "@/lib/operational-cash";
 import {recordCombinedPurchase,recordDailyProduction,registerVoidReceipt,createCashEntry,addInventoryAsset,moveInventoryAsset} from "@/lib/kelapa-go-operations";
 import {revalidatePath} from "next/cache";
 import {redirect} from "next/navigation";
@@ -52,4 +53,12 @@ export async function assetMovementAction(f:FormData){
  await safeWrite("/inventory",()=>moveInventoryAsset({id:s(f,"assetId"),date:s(f,"date"),kind:s(f,"kind"),
   quantity:Number(f.get("quantity")),outletId:s(f,"outletId"),note:s(f,"note")},actor.id));
  revalidatePath("/inventory");redirect("/inventory?success=1");
+}
+
+export async function openingCashAction(f:FormData){
+ const actor=await requireOwner();
+ const amount=s(f,"amount");
+ if(!/^[0-9]+$/.test(amount))redirect("/cash?error=Saldo%20awal%20tidak%20valid");
+ await safeWrite("/cash",()=>setOpeningBalance({wallet:s(f,"wallet"),amount:Number(amount),reason:s(f,"reason")},actor.id));
+ revalidatePath("/cash");revalidatePath("/owner");redirect("/cash?success=1");
 }

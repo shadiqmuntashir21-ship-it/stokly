@@ -23,6 +23,7 @@ export const datasets:{file:string;sql:string;master?:boolean}[]=[
  {file:"go_legacy_receipt_payments",sql:"SELECT p.* FROM legacy_receipt_payments p WHERE "+fy("p.paid_on")},
  {file:"go_legacy_cash_entries",sql:"SELECT e.* FROM legacy_cash_entries e WHERE "+fy("e.entry_date")},
  {file:"go_cash_operational",sql:"SELECT e.* FROM cash_ledger_entries e WHERE "+fy("e.entry_date")},
+ {file:"go_cash_openings",sql:"SELECT * FROM operational_cash_openings",master:true},
  {file:"go_inventory_assets",sql:"SELECT * FROM inventory_assets",master:true},
  {file:"go_inventory_movements",sql:"SELECT m.* FROM inventory_asset_movements m WHERE "+fy("m.movement_date")},
  {file:"go_basket_old",sql:"SELECT * FROM legacy_basket_movements",master:true},

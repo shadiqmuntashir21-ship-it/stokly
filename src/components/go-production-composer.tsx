@@ -2,7 +2,8 @@
 import {useState} from "react";
 import {dailyProductionAction} from "@/app/(private)/go-actions";
 import {SubmitButton} from "@/components/submit-button";
-type Product={id:string;name:string;sku:string};
+import {nominalLabel} from "@/lib/rupiah-input";
+type Product={id:string;name:string;sku:string;price:string;unit:string};
 const categories=[["GO-MAKAN-FULL","Grade A · Makan Full"],["GO-KELAPA-TAR","Grade B · Kelapa Tar"],["GO-SERUT","Kelapa Serut"]] as const;
 export function GoProductionComposer({products,requestKey,date,available}:{products:Product[];requestKey:string;date:string;available:number}){
  const [quantities,setQuantities]=useState<Record<string,number>>({});
@@ -10,7 +11,7 @@ export function GoProductionComposer({products,requestKey,date,available}:{produ
  const [used,setUsed]=useState(1);
  const chosen=categories.map(([sku])=>({productId:products.find(x=>x.sku===sku)?.id||"",quantity:quantities[sku]||0})).filter(x=>x.quantity>0);
  const total=chosen.reduce((s,x)=>s+x.quantity,0)+damaged;
- const valid=used>0&&used<=available&&Number.isSafeInteger(used)&&Number.isSafeInteger(damaged)&&damaged>=0&&total===used&&chosen.every(x=>!!x.productId);
+ const valid=used>0&&used<=available&&Number.isSafeInteger(used)&&Number.isSafeInteger(damaged)&&damaged>=0&&total===used&&chosen.every(x=>!!x.productId&&Number.isSafeInteger(x.quantity));
  return <form action={dailyProductionAction}>
   <input type="hidden" name="requestKey" value={requestKey}/>
   <input type="hidden" name="outputs" value={JSON.stringify(chosen)}/>
@@ -19,7 +20,7 @@ export function GoProductionComposer({products,requestKey,date,available}:{produ
    <label>Kelapa diproses<input name="used" type="number" min="1" max={available} step="1" required value={used} onChange={e=>setUsed(Number(e.target.value))}/></label>
   </div>
   <div className="order-items"><div className="order-items-head"><strong>Hasil produksi per kategori</strong></div>
-   {categories.map(([sku,label])=><div key={sku} className="order-item-row"><label>{label}<input type="number" min="0" step="1" value={quantities[sku]||0} onChange={e=>setQuantities(q=>({...q,[sku]:Math.max(0,Number(e.target.value))}))}/></label></div>)}
+   {categories.map(([sku,label])=>{const p=products.find(x=>x.sku===sku),price=Number(p?.price||0),qty=quantities[sku]||0;return <div key={sku} className="order-item-row"><label>{label} ({p?.unit||"unit"})<input type="number" min="0" step="1" value={qty||""} placeholder="0" onChange={e=>setQuantities(q=>({...q,[sku]:Math.max(0,Number(e.target.value))}))}/></label><span className="form-hint">Harga standar: {price>0?nominalLabel(price):"Belum ditetapkan"} · Nilai hasil: {price>0?nominalLabel(price*qty):"—"}</span></div>;})}
    <div className="order-item-row"><label>Rusak saat produksi<input name="damaged" type="number" min="0" step="1" value={damaged} onChange={e=>setDamaged(Math.max(0,Number(e.target.value)))}/></label></div>
   </div>
   <p className={total===used?"form-hint":"form-hint status-danger"}>Total hasil {total} dari {used} butir · {used-total} belum dipertanggungjawabkan.</p>

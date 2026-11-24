@@ -16,7 +16,7 @@ export default async function KelapaGoHistory({searchParams}:{searchParams:Promi
  const [summary,outlets,sourceList,groups,stock,days,perOutlet,advances]=await Promise.all([
   legacyReceiptsSummary(),legacyOutletSummary(),
   query<Source>("SELECT source_sheet,count(*)::int AS count FROM legacy_source_rows GROUP BY source_sheet ORDER BY source_sheet"),
-  query<CashGroup>("SELECT category,entry_count,total_in::text,total_out::text FROM v_go_cash_category_live ORDER BY entry_count DESC"),
+  query<CashGroup>("SELECT COALESCE(NULLIF(category,''),'BELUM DIKLASIFIKASI') AS category,COUNT(*)::int AS entry_count,COALESCE(SUM(money_in),0)::text AS total_in,COALESCE(SUM(money_out),0)::text AS total_out FROM legacy_cash_entries GROUP BY 1 ORDER BY entry_count DESC"),
   query<{quantity:number;snapshot_date:string|null;status:string}>("SELECT quantity,snapshot_date::text,status FROM legacy_stock_snapshots WHERE source_sheet='STOCK KM'"),
   query<SalesDay>("SELECT issued_on::text,receipt_count,pieces,gross::text,return_value::text,net_sales::text FROM v_go_sales_daily ORDER BY issued_on DESC LIMIT 40"),
   query<OutletDay>("SELECT issued_on::text,outlet_name,receipt_count,pieces,net_sales::text FROM v_go_outlet_daily ORDER BY issued_on DESC,pieces DESC LIMIT 100"),
@@ -52,7 +52,7 @@ export default async function KelapaGoHistory({searchParams}:{searchParams:Promi
   </tbody></table></div>
   <p className="form-hint">Angka historis dan transaksi baru dipisahkan, sehingga laporan tidak menggandakan kuitansi yang sama.</p>
  </Panel>
- <Panel title="Pivot Kas Kecil — rekap kategori otomatis">
+ <Panel title="Pivot Kas Kecil historis — rekap kategori Excel">
   <div className="table-wrap"><table><thead><tr><th>Kategori</th><th>Jumlah catatan</th><th>Kas masuk</th><th>Kas keluar</th></tr></thead><tbody>
    {groups.map(x=><tr key={x.category}><td>{x.category}</td><td>{x.entry_count}</td><td>{rupiah(x.total_in)}</td><td>{rupiah(x.total_out)}</td></tr>)}
   </tbody></table></div><p><Link href="/cash">Buku kas kecil operasional →</Link></p>

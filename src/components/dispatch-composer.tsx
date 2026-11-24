@@ -1,5 +1,6 @@
 "use client";
 import {useState} from "react";
+import {SearchableChoice} from "@/components/searchable-choice";
 import {dispatchAction} from "@/app/(private)/order-actions";
 import {SubmitButton} from "@/components/submit-button";
 type Line={id:string;order_id:string;number:string|null;outlet:string;product:string;quantity:number;shipped:number;unit_price:string};
@@ -8,16 +9,15 @@ export function DispatchComposer({lines,requestKey,initialOrderId=""}:{lines:Lin
  const open=lines.filter(x=>x.quantity>x.shipped);
  const orders=Array.from(new Map(open.map(x=>[x.order_id,{id:x.order_id,number:x.number,outlet:x.outlet}])).values());
  const [orderId,setOrderId]=useState(initialOrderId);
- const [orderSearch,setOrderSearch]=useState("");
- const visibleOrders=orders.filter(x=>x.id===orderId||`${x.number||""} ${x.outlet}`.toLocaleLowerCase("id-ID").includes(orderSearch.trim().toLocaleLowerCase("id-ID")));
+
+ const choices=orders.map(x=>({id:x.id,label:(x.number||"Order lama tanpa nota")+" · "+x.outlet,search:x.number?String(Number(x.number)):"",detail:open.filter(l=>l.order_id===x.id).map(l=>l.product+" · sisa "+(l.quantity-l.shipped)).join(" | ")}));
  const selected=open.filter(x=>x.order_id===orderId);
  const [quantities,setQuantities]=useState<Record<string,number>>({});
  const items=selected.filter(x=>(quantities[x.id]??(x.quantity-x.shipped))>0).map(x=>({orderItemId:x.id,quantity:quantities[x.id]??(x.quantity-x.shipped)}));
  const valid=items.length>0&&items.every(x=>Number.isSafeInteger(x.quantity)&&x.quantity<=selected.find(y=>y.id===x.orderItemId)!.quantity-selected.find(y=>y.id===x.orderItemId)!.shipped);
  return <form action={dispatchAction} className="form-grid">
   <input name="requestKey" type="hidden" value={requestKey}/><input name="orderId" type="hidden" value={orderId}/><input name="items" type="hidden" value={JSON.stringify(items)}/>
-  <label className="wide">Cari nomor nota atau outlet<input type="search" autoComplete="off" placeholder="Ketik nomor nota atau nama outlet" value={orderSearch} onChange={e=>setOrderSearch(e.target.value)}/></label>
-  <label className="wide">Order / Kwitansi<select value={orderId} onChange={e=>{setOrderId(e.target.value);setQuantities({});}} required><option value="" disabled>Pilih order yang belum selesai dikirim</option>{visibleOrders.map(x=><option key={x.id} value={x.id}>{x.number||"Order lama tanpa nomor — perlu dicocokkan"} · {x.outlet}</option>)}</select>{visibleOrders.length===0&&<span role="status" className="form-hint">Tidak ditemukan order yang cocok.</span>}</label>
+  <div className="wide"><SearchableChoice label="Order / Nomor nota" placeholder="Ketik nomor nota atau nama outlet" choices={choices} value={orderId} onChange={id=>{setOrderId(id);setQuantities({});}}/></div>
   {selected.map(x=><label key={x.id}>{x.product} · sisa {x.quantity-x.shipped}<input type="number" min="0" max={x.quantity-x.shipped} step="1" value={quantities[x.id]??(x.quantity-x.shipped)} onChange={e=>setQuantities(old=>({...old,[x.id]:Number(e.target.value)}))}/></label>)}
   {selected.length>0&&<div className="wide" style={{display:"flex",gap:12,flexWrap:"wrap"}}><button type="button" className="text-action" onClick={()=>setQuantities(Object.fromEntries(selected.map(x=>[x.id,x.quantity-x.shipped])))}>Kirim semua</button><button type="button" className="text-action" onClick={()=>setQuantities(Object.fromEntries(selected.map(x=>[x.id,0])))}>Isi sebagian</button></div>}
   <label>Tanggal kirim<input type="date" name="deliveredOn" defaultValue={localDate()} required/></label>

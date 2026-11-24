@@ -104,7 +104,7 @@ export function Shell({actor,children}:{actor:Actor;children:React.ReactNode}){
     <div className="nav-group"><button type="button" className="logout-button" onClick={()=>setLegacyOpen(x=>!x)} aria-expanded={legacyOpen}>{legacyOpen?"Tutup menu lama":"Lihat menu arsip/lama"}</button>{oldItems.map(({href,label,icon:Icon})=><Link className="nav-link" key={href} href={href} onClick={()=>setOpen(false)}><Icon size={18}/><span className="nav-text">{label}</span></Link>)}</div>
     {!visible.length&&!oldItems.length&&<p className="nav-empty">Fitur tidak ditemukan.</p>}
    </nav>
-   <div className="sidebar-bottom"><div className="user-info"><span className="avatar">{actor.name.charAt(0).toUpperCase()}</span><span><b>{actor.name}</b><small>{actor.role==="owner"?"Owner · Akses penuh":actor.role==="admin"?"Admin operasional":"Tim marketing"}</small></span></div>
+   <div className="sidebar-bottom"><div className="user-info"><span className="avatar">{actor.role==="owner"?"O":actor.name.charAt(0).toUpperCase()}</span><span><b>{actor.role==="owner"?"Room Owner":actor.name}</b><small>{actor.role==="owner"?"Owner · Akses penuh":actor.role==="admin"?"Admin operasional":"Tim marketing"}</small></span></div>
     <button className="logout-button" onClick={signOut}><LogOut size={17}/>{actor.role==="owner"?"Kunci Room Owner":"Ganti Room"}<ChevronRight size={14}/></button></div>
   </aside>
   {open&&<button className="side-backdrop" aria-label="Tutup menu" onClick={()=>setOpen(false)} />}
@@ -112,7 +112,7 @@ export function Shell({actor,children}:{actor:Actor;children:React.ReactNode}){
    <header className="topbar">
     <div className="topbar-start"><button className="menu-button" aria-label="Buka menu" onClick={()=>setOpen(true)}><Menu size={22}/></button>
      <span className="topbar-section">WORKSPACE <ChevronRight size={12}/> <strong>{navGroups.flatMap(g=>g.items).find(x=>x.href===pathname)?.label||"STOKLY"}</strong></span></div>
-    <div className="topbar-right"><Link href="/search" aria-label="Cari transaksi, produk, outlet" title="Cari semua data"><Search size={18}/></Link><span className={"live-pill "+(!online?"status-danger":"")}><Wifi size={14}/> {online?"Online":"Offline"}</span><span className="room-pill">{actor.role==="owner"?"OWNER":actor.role==="admin"?"ADMIN":"MARKETING"}</span><span className="top-avatar">{actor.name.charAt(0).toUpperCase()}</span></div>
+    <div className="topbar-right"><Link href="/search" aria-label="Cari transaksi, produk, outlet" title="Cari semua data"><Search size={18}/></Link><span className={"live-pill "+(!online?"status-danger":"")}><Wifi size={14}/> {online?"Online":"Offline"}</span><span className="room-pill">{actor.role==="owner"?"OWNER":actor.role==="admin"?"ADMIN":"MARKETING"}</span><span className="top-avatar">{actor.role==="owner"?"O":actor.name.charAt(0).toUpperCase()}</span></div>
    </header>
    <main className="content" id="main-content">{children}</main>
    <footer className="app-footer">STOKLY <span>·</span> Kelapa Branding Indonesia <span>·</span> Operasional usaha dalam satu ruang.</footer>

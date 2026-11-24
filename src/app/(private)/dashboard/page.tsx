@@ -17,7 +17,7 @@ export default async function Dashboard(){
   query<{count:number}>("SELECT COUNT(*)::int AS count FROM outlet_complaints WHERE status IN('open','investigating')"),
   actor.role!=="marketing"?query<{gross:string;returns:string;paid:string}>("SELECT COALESCE((SELECT SUM(gross) FROM delivery_invoices WHERE status='issued'),0)::text AS gross,COALESCE((SELECT SUM(r.credit_amount) FROM delivery_returns r JOIN delivery_invoices i ON i.delivery_id=r.delivery_id WHERE i.status='issued'),0)::text AS returns,COALESCE((SELECT SUM(p.amount) FROM delivery_payments p JOIN delivery_invoices i ON i.id=p.invoice_id WHERE i.status='issued'),0)::text AS paid"):Promise.resolve([{gross:"0",returns:"0",paid:"0"}]),
   actor.role!=="marketing"?query<{unpaid:number;sum:string}>("SELECT COUNT(*)::int unpaid,COALESCE(SUM(confirmed_due),0)::text sum FROM v_go_unpaid_current WHERE confirmed_due>0"):Promise.resolve([{unpaid:0,sum:"0"}]),
-  actor.role!=="marketing"?query<{qty:number}>("SELECT COALESCE(SUM(b.quantity),0)::int qty FROM inventory_balances b JOIN products p ON p.id=b.product_id WHERE p.category='Kelapa Jadi'"):Promise.resolve([{qty:0}])
+  actor.role!=="marketing"?query<{qty:number}>("SELECT COALESCE(SUM(b.quantity),0)::int qty FROM inventory_balances b JOIN products p ON p.id=b.product_id WHERE p.sku IN ('GO-MAKAN-FULL','GO-KELAPA-TAR','GO-SERUT') AND p.active=true"):Promise.resolve([{qty:0}])
  ]);
  const low=products.filter(p=>p.stock<=p.min_stock);
  const order=orders[0]||{today:0,pending:0,partial:0};
@@ -31,7 +31,7 @@ export default async function Dashboard(){
   ]:[]),
   {name:"Komplain perlu tindakan",value:complaints[0]?.count||0,detail:"Belum ditutup",href:"/outlet-returns",icon:RotateCcw},
   {name:"Stok menipis",value:low.length,detail:"Perlu dicek atau diproduksi",href:"/products",icon:AlertTriangle},
-  ...(actor.role!=="marketing"?[{name:"Stok kelapa jadi siap jual",value:finished[0]?.qty||0,detail:"Tersisa setelah pengiriman",href:"/production",icon:Package}]:[])
+  ...(actor.role!=="marketing"?[{name:"Stok jadi siap kirim (unit)",value:finished[0]?.qty||0,detail:"Lihat rincian per kategori dan satuan",href:"/production",icon:Package}]:[])
  ];
  return <div>
   <section className="dashboard-hero">

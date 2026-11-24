@@ -53,8 +53,8 @@ export async function recordDailyProduction(input:{requestKey:string;date:string
   const prior=await c.query<{id:string}>("SELECT id::text FROM coconut_production_days WHERE request_key=$1",[input.requestKey]);
   if(prior.rows[0])return prior.rows[0].id;
   const productIds=input.outputs.map(x=>x.productId).sort();
-  const prods=await c.query<{id:string;category:string}>("SELECT id::text,category FROM products WHERE active=true AND id=ANY($1::uuid[])",[productIds]);
-  if(prods.rowCount!==productIds.length||prods.rows.some(x=>x.category==="Afkir"))
+  const prods=await c.query<{id:string;category:string;sku:string}>("SELECT id::text,category,sku FROM products WHERE active=true AND id=ANY($1::uuid[])",[productIds]);
+  if(prods.rowCount!==productIds.length||prods.rows.some(x=>x.category==="Afkir"||!["GO-MAKAN-FULL","GO-KELAPA-TAR","GO-SERUT"].includes(x.sku)))
    throw new BusinessError("Produk hasil produksi tidak valid atau termasuk kategori afkir.");
   const batches=await c.query<{id:string;available:number;accepted:number;total_value:string}>(
    "SELECT b.id::text,(b.accepted_qty-b.consumed_qty)::int available,b.accepted_qty accepted,r.total_value::text total_value FROM coconut_batches b JOIN coconut_receipts r ON r.id=b.receipt_id WHERE b.accepted_qty>b.consumed_qty ORDER BY r.received_at,b.id FOR UPDATE OF b");

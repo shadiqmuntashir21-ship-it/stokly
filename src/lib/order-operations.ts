@@ -22,7 +22,7 @@ export async function listOrders(){
 }
 export async function listOrderLines(){
  return query<{id:string;order_id:string;number:string|null;outlet:string;product:string;quantity:number;unit_price:string;shipped:number}>(
- "SELECT i.id::text,i.order_id::text,o.document_number AS number,t.name AS outlet,p.name AS product,i.quantity,i.unit_price::text,COALESCE((SELECT SUM(di.quantity)::int FROM delivery_note_items di WHERE di.order_item_id=i.id),0)::int AS shipped FROM customer_order_items i JOIN customer_orders o ON o.id=i.order_id JOIN outlets t ON t.id=o.outlet_id JOIN products p ON p.id=i.product_id WHERE o.status!='cancelled' ORDER BY o.created_at DESC,p.name LIMIT 250"
+ "SELECT i.id::text,i.order_id::text,o.document_number AS number,t.name AS outlet,p.name AS product,i.quantity,i.unit_price::text,COALESCE((SELECT SUM(di.quantity)::int FROM delivery_note_items di WHERE di.order_item_id=i.id),0)::int AS shipped FROM customer_order_items i JOIN customer_orders o ON o.id=i.order_id JOIN outlets t ON t.id=o.outlet_id JOIN products p ON p.id=i.product_id WHERE o.status!='cancelled' AND i.quantity>COALESCE((SELECT SUM(di.quantity)::int FROM delivery_note_items di WHERE di.order_item_id=i.id),0) ORDER BY o.created_at DESC,p.name"
  );
 }
 export async function createOrder(data:{requestKey:string;outletId:string;items:OrderItem[];deliveryDate:string;note:string;priceReason:string},actor:string,allowOverride:boolean){

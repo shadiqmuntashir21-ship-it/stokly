@@ -1,0 +1,5 @@
+import {query} from "@/lib/db";
+export type FinishedStock={sku:string;name:string;unit:string;price:string;produced:number;shipped:number;stock:number};
+export async function finishedStock(date:string){
+ return query<FinishedStock>("SELECT p.sku,p.name,p.unit,p.price::text,COALESCE((SELECT SUM(o.quantity)::int FROM coconut_production_day_outputs o JOIN coconut_production_days d ON d.id=o.production_id WHERE o.product_id=p.id AND d.production_date=$1::date),0)::int AS produced,COALESCE((SELECT SUM(di.quantity)::int FROM delivery_note_items di JOIN delivery_notes dn ON dn.id=di.delivery_id JOIN customer_order_items oi ON oi.id=di.order_item_id WHERE oi.product_id=p.id AND dn.delivered_on=$1::date),0)::int AS shipped,COALESCE(b.quantity,0)::int AS stock FROM products p LEFT JOIN inventory_balances b ON b.product_id=p.id WHERE p.sku IN ('GO-MAKAN-FULL','GO-KELAPA-TAR','GO-SERUT') AND p.active=true ORDER BY CASE p.sku WHEN 'GO-MAKAN-FULL' THEN 1 WHEN 'GO-KELAPA-TAR' THEN 2 ELSE 3 END",[date]);
+}
