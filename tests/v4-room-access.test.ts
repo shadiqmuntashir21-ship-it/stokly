@@ -17,13 +17,13 @@ test("Owner remains session-protected",async()=>{
  assert.match(access,/roles\[0\]\?\.role==="owner"/);
  assert.match(access,/if\(actor\.role!=="owner"\)redirect\("\/login"\)/);
 });
-test("Landing keeps the genuine logo at normal size and does not duplicate it",async()=>{
+test("Landing uses the new KELAPA GO logo without duplicates",async()=>{
  const rooms=await read("src/app/rooms/page.tsx");
  const brand=await read("src/components/brand.tsx");
  const dashboard=await read("src/app/(private)/dashboard/page.tsx");
  assert.doesNotMatch(rooms,/landing-art|devices\/request/);
  assert.match(rooms,/tanpa PIN atau persetujuan perangkat/);
- assert.match(brand,/kelapa-brand\.webp/);
- assert.doesNotMatch(brand,/kelapa-brand-hd\.webp/);
+ assert.match(brand,/kelapa-go-symbol\.svg/);
+ assert.doesNotMatch(brand,/STOKLY|Kelapa Branding Indonesia/);
  assert.doesNotMatch(dashboard,/dashboard-hero-mark/);
 });

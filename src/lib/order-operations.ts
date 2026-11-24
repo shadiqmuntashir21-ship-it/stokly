@@ -1,7 +1,7 @@
 import {query,transaction} from "@/lib/db";
 import {BusinessError} from "@/lib/operations";
 
-const uuid=(x:string)=>/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(x);
+const uuid=(x:string)=>/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(x);
 const positive=(n:number)=>Number.isSafeInteger(n)&&n>0&&n<=100000000;
 const validDate=(d:string)=>/^\d{4}-\d{2}-\d{2}$/.test(d);
 const cents=(n:number)=>Math.round(n*100);

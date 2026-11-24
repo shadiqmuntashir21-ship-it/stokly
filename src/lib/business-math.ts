@@ -1,4 +1,4 @@
-/** STOKLY financial rules in integer cents; never use floating point to determine balances. */
+/** KELAPA GO financial rules in integer cents; never use floating point to determine balances. */
 export function toCents(value:number|string):number{
  const n=Number(value);
  if(!Number.isFinite(n)||Math.abs(n)>1e12)throw new Error("Nilai uang tidak valid.");

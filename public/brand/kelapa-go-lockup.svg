@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 580 150" role="img" aria-label="KELAPA GO">
+ <rect x="6" y="6" width="138" height="138" rx="34" fill="#08432F"/>
+ <g transform="translate(7,7) scale(1.14)">
+  <path d="M16 86c5 14 19 22 40 22 24 0 41-11 50-27-13 11-30 16-46 13C40 91 26 82 22 69c-3 5-6 11-6 17Z" fill="#A9DA55"/>
+  <path d="M27 59c1-20 15-35 34-35 21 0 37 17 37 38 0 21-16 37-37 37-19 0-34-15-34-40Z" fill="#F9FFF0"/>
+  <path d="M38 64c0-14 10-25 23-25 15 0 26 11 26 25 0 15-11 26-26 26-13 0-23-11-23-26Z" fill="#D4E9B4"/>
+  <path d="M65 28c3-18 13-23 31-23-9 7-15 14-18 26Z" fill="#C6E66C"/>
+  <path d="M68 30C61 15 46 12 31 17c12 2 20 9 26 18Z" fill="#9AD54B"/>
+  <path d="M72 38c12-14 26-14 39-6-15 0-22 5-29 14Z" fill="#C6E66C"/>
+ </g>
+ <text x="162" y="83" font-family="Arial,Helvetica,sans-serif" font-weight="900" font-size="62" letter-spacing="-2" fill="#083F2C">KELAPA</text>
+ <text x="421" y="83" font-family="Arial,Helvetica,sans-serif" font-weight="900" font-size="62" letter-spacing="-2" fill="#80B93D">GO</text>
+ <text x="165" y="119" font-family="Arial,Helvetica,sans-serif" font-size="18" letter-spacing="4" font-weight="700" fill="#5F7E6E">BUSINESS CONTROL</text>
+</svg>

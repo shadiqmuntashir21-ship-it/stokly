@@ -37,6 +37,6 @@ export function PwaRegister() {
   }, []);
   return <>
     {!online && <div className="connection-banner">Sedang offline. Transaksi tidak tersedia.</div>}
-    {waiting && <div className="update-banner">Pembaruan STOKLY tersedia. <button onClick={() => waiting.postMessage({type:"SKIP_WAITING"})}>Muat versi terbaru</button></div>}
+    {waiting && <div className="update-banner">Pembaruan KELAPA GO tersedia. <button onClick={() => waiting.postMessage({type:"SKIP_WAITING"})}>Muat versi terbaru</button></div>}
   </>;
 }

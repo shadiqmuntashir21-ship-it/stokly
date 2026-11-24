@@ -17,7 +17,7 @@ export default async function Setup({searchParams}:{searchParams:Promise<{error?
   if (exists.length) redirect("/login");
   return <main className="login-screen"><section className="login-card">
     <div className="brand-mark">S<span>.</span></div>
-    <p className="eyebrow">AKTIVASI AWAL / STOKLY</p>
+    <p className="eyebrow">AKTIVASI AWAL / KELAPA GO</p>
     <h1>Siapkan akun Owner</h1>
     <p className="muted">Aktivasi hanya dilakukan sekali. Setelah itu, Owner cukup memasukkan PIN untuk membuka Room Owner.</p>
     {issue && <p className="form-error" role="alert" style={{marginTop:20}}>{issue}</p>}

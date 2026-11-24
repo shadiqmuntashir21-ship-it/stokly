@@ -1,7 +1,7 @@
 import {query,transaction} from "@/lib/db";
 import {BusinessError} from "@/lib/operations";
 
-const isUuid=(v:string)=>/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(v);
+const isUuid=(v:string)=>/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(v);
 export type LegacyReceipt={id:string;outlet:string;ordered_on:string;status:string;deliveries:number;items:number};
 export async function unnumberedReceipts(){
  return query<LegacyReceipt>(

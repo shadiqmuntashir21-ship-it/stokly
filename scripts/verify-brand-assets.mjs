@@ -13,8 +13,8 @@ for(const [file,minH,exactW] of files){
   throw Error("Aset logo tidak mencapai ukuran yang diminta: "+file);
  console.log(file,meta.width+"x"+meta.height,(await stat(file)).size+" bytes");
 }
-const original=await readFile("public/brand/kelapa-brand.webp");
-if(original.length<1000)throw Error("Sumber logo asli tidak valid.");
+const original=await readFile("public/brand/kelapa-go-symbol.svg","utf8");
+if(!original.includes("<svg")||!original.includes("#08432F"))throw Error("Lambang KELAPA GO tidak valid.");
 const svg=await readFile("public/icons/icon.svg","utf8");
-if(!svg.includes("data:image/webp;base64"))throw Error("Favicon SVG tidak menggunakan logo asli.");
-console.log("Logo asli digunakan untuk semua aset HD dan favicon.");
+if(!svg.includes("Lambang KELAPA GO")||!svg.includes("#08432F"))throw Error("Favicon belum menggunakan lambang KELAPA GO.");
+console.log("Identitas baru KELAPA GO aktif pada favicon dan semua aset.");

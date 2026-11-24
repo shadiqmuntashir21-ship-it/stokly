@@ -1,6 +1,6 @@
 import {query,transaction} from "@/lib/db";
 import {BusinessError} from "@/lib/operations";
-const uuid=(s:string)=>/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(s);
+const uuid=(s:string)=>/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(s);
 export async function recordLegacyPayment(input:{key:string;number:string;date:string;amount:number;method:string;note:string},actor:string){
  if(!uuid(input.key)||!/^[0-9]{7}$/.test(input.number)||!/^\d{4}-\d{2}-\d{2}$/.test(input.date)||
  !Number.isFinite(input.amount)||input.amount<=0||input.amount>1e12||

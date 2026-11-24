@@ -111,11 +111,11 @@ export function Shell({actor,children}:{actor:Actor;children:React.ReactNode}){
   <div className="main-area">
    <header className="topbar">
     <div className="topbar-start"><button className="menu-button" aria-label="Buka menu" onClick={()=>setOpen(true)}><Menu size={22}/></button>
-     <span className="topbar-section">WORKSPACE <ChevronRight size={12}/> <strong>{navGroups.flatMap(g=>g.items).find(x=>x.href===pathname)?.label||"STOKLY"}</strong></span></div>
+     <span className="topbar-section">WORKSPACE <ChevronRight size={12}/> <strong>{navGroups.flatMap(g=>g.items).find(x=>x.href===pathname)?.label||"KELAPA GO"}</strong></span></div>
     <div className="topbar-right"><Link href="/search" aria-label="Cari transaksi, produk, outlet" title="Cari semua data"><Search size={18}/></Link><span className={"live-pill "+(!online?"status-danger":"")}><Wifi size={14}/> {online?"Online":"Offline"}</span><span className="room-pill">{actor.role==="owner"?"OWNER":actor.role==="admin"?"ADMIN":"MARKETING"}</span><span className="top-avatar">{actor.role==="owner"?"O":actor.name.charAt(0).toUpperCase()}</span></div>
    </header>
    <main className="content" id="main-content">{children}</main>
-   <footer className="app-footer">STOKLY <span>·</span> Kelapa Branding Indonesia <span>·</span> Operasional usaha dalam satu ruang.</footer>
+   <footer className="app-footer">KELAPA GO <span>·</span> Sistem Operasional Bisnis <span>·</span> Operasional usaha dalam satu ruang.</footer>
   </div>
   <nav className="bottom-nav" aria-label="Navigasi cepat mobile">
    {mobile.map(({href,label,icon:Icon})=><Link key={href} href={href} aria-current={pathname===href?"page":undefined} className={pathname===href?"active":""}>
