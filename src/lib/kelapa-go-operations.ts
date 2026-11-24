@@ -2,7 +2,7 @@ import {randomUUID} from "node:crypto";
 import {query,transaction} from "@/lib/db";
 import {BusinessError} from "@/lib/operations";
 
-const uuid=(s:string)=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+const uuid=(s:string)=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
 const day=(s:string)=>/^\d{4}-\d{2}-\d{2}$/.test(s)&&!Number.isNaN(Date.parse(s+"T00:00:00Z"));
 const count=(n:number)=>Number.isSafeInteger(n)&&n>=0&&n<10000000;
 const price=(n:number)=>Number.isFinite(n)&&n>=0&&n<=1000000000&&Number.isSafeInteger(Math.round(n*100));
@@ -68,6 +68,7 @@ export async function recordDailyProduction(input:{requestKey:string;date:string
    if(remaining<=0)break;
    const taken=Math.min(remaining,b.available);
    const amount=Math.round((Number(b.total_value)/b.accepted)*taken*100);
+   if(!Number.isSafeInteger(amount)||amount<0)throw new BusinessError("Biaya bahan baku pembelian tidak valid. Periksa harga pembelian.");
    costCents+=amount;remaining-=taken;
    await c.query("UPDATE coconut_batches SET consumed_qty=consumed_qty+$2 WHERE id=$1",[b.id,taken]);
    await c.query("INSERT INTO coconut_production_day_consumptions(production_id,batch_id,quantity,raw_cost) VALUES($1,$2,$3,$4)",

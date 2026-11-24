@@ -16,7 +16,7 @@ export async function createOrderAction(f:FormData){
  const {query}=await import("@/lib/db");
  const row=await query<{document_number:string|null}>("SELECT document_number FROM customer_orders WHERE id=$1",[orderId]);
  revalidatePath("/orders");revalidatePath("/invoices");
- redirect("/orders?success=1&receipt="+encodeURIComponent(row[0]?.document_number||""));
+ redirect("/orders?success=1&receipt="+encodeURIComponent(row[0]?.document_number||"")+"&order="+encodeURIComponent(orderId));
 }
 export async function dispatchAction(f:FormData){
  const actor=await requireActor(["owner","admin"]);
@@ -24,8 +24,8 @@ export async function dispatchAction(f:FormData){
  try{items=JSON.parse(s(f,"items"));}catch{redirect("/orders?error=Item%20pengiriman%20tidak%20valid");}
  if(!Array.isArray(items))redirect("/orders?error=Item%20pengiriman%20tidak%20valid");
  const clean=items.map(x=>({orderItemId:String(x.orderItemId||""),quantity:Number(x.quantity)}));
- await safeWrite("/orders",()=>dispatchOrder({requestKey:s(f,"requestKey"),orderId:s(f,"orderId"),items:clean,deliveredOn:s(f,"deliveredOn"),note:s(f,"note")},actor.id));
- revalidatePath("/orders");revalidatePath("/invoices");revalidatePath("/products");revalidatePath("/dashboard");redirect("/orders?success=1");
+ const deliveryId=await safeWrite("/orders",()=>dispatchOrder({requestKey:s(f,"requestKey"),orderId:s(f,"orderId"),items:clean,deliveredOn:s(f,"deliveredOn"),note:s(f,"note")},actor.id));
+ revalidatePath("/orders");revalidatePath("/invoices");revalidatePath("/products");revalidatePath("/dashboard");redirect("/orders?success=1&delivery="+encodeURIComponent(deliveryId));
 }
 export async function payAction(f:FormData){
  const actor=await requireActor(["owner","admin"]);

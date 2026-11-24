@@ -38,8 +38,9 @@ export function OrderComposer({products,outlets,requestKey,canOverride,numberRea
    <button type="button" className="remove-line" disabled={items.length===1} onClick={()=>setItems(old=>old.filter((_,j)=>j!==i))}>Hapus</button>
   </div>)}
  </div>
+ {canOverride&&items.some(x=>x.productId&&master(x.productId)===0)&&<p className="form-hint wide" role="note">Harga standar belum tersedia untuk produk yang dipilih. Masukkan harga transaksi yang benar-benar disepakati dan alasan harga khusus. Tanpa harga positif, order tidak bisa disimpan.</p>}
  {canOverride&&changed&&<label className="wide">Alasan harga khusus (wajib)<input name="priceReason" value={reason} onChange={e=>setReason(e.target.value)} minLength={5} maxLength={400} required placeholder="Kesepakatan harga dengan outlet"/></label>}
  <div className="order-submit"><span><span className="small-muted">Total nilai order</span><strong>{rp(total)} <small className="form-hint">({nominalLabel(total)})</small></strong></span><SubmitButton className="primary-button" disabled={!valid}>Simpan Order</SubmitButton></div>
- <p className="form-hint">Nomor nota 7 digit langsung diterbitkan saat order tersimpan. Nomor terlihat di konfirmasi dan daftar order. Stok baru berkurang saat barang dikirim.</p>
+ <p className="form-hint">Nomor nota 7 digit langsung diterbitkan saat order tersimpan. Bukti pemesanan bisa langsung dicetak; kwitansi pengiriman terisi setelah barang benar-benar dikirim. Stok hanya berkurang ketika pengiriman dicatat.</p>
  </form>;
 }

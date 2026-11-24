@@ -9,7 +9,7 @@ import {PageHead,Panel,Empty,Notice,rupiah} from "@/components/ui";
 import {OrderComposer} from "@/components/order-composer";
 import {DispatchComposer} from "@/components/dispatch-composer";
 export const dynamic="force-dynamic";
-export default async function Orders({searchParams}:{searchParams:Promise<{success?:string;error?:string;repeat?:string;dispatch?:string;receipt?:string}>}){
+export default async function Orders({searchParams}:{searchParams:Promise<{success?:string;error?:string;repeat?:string;dispatch?:string;receipt?:string;order?:string;delivery?:string}>}){
  const actor=await requireActor(["owner","admin","marketing"]);
  const [products,outletList,orders,lines,ready,params]=await Promise.all([listProducts(),outlets(),listOrders(),listOrderLines(),receiptNumberReady(),searchParams]);
  const remaining=lines.filter(x=>x.quantity>x.shipped);
@@ -19,14 +19,15 @@ export default async function Orders({searchParams}:{searchParams:Promise<{succe
  const initialItems=repeat.map(x=>({productId:x.productId,quantity:x.quantity,unitPrice:null}));
 
  return <><PageHead eyebrow="DISTRIBUSI / TRANSAKSI" title="Order Outlet" description="Harga transaksi bisa disesuaikan oleh Admin/Owner. Satu pengiriman bisa berisi banyak item."/><Notice success={params.success} error={params.error}/>
- {params.receipt&&/^\d{7}$/.test(params.receipt)&&<p className="success-notice" role="status"><strong>Order tersimpan! Nomor nota: {params.receipt}</strong> — simpan atau foto nomor ini untuk referensi pengiriman.</p>}
+ {params.receipt&&/^\d{7}$/.test(params.receipt)&&<p className="success-notice" role="status"><strong>Order tersimpan! Nomor nota: {params.receipt}</strong> — simpan nomor ini untuk referensi pengiriman. {actor.role!=="marketing"&&params.order&&/^[a-f0-9-]{36}$/i.test(params.order)&&<Link href={"/receipts/"+params.order+"/print"}>Lihat / cetak bukti pesanan →</Link>}</p>}
  {!ready&&actor.role==="owner"&&<p className="form-hint">Nomor kwitansi belum diaktifkan. <Link href="/settings/receipts">Aktifkan penomoran di Pengaturan Owner</Link> setelah memeriksa spreadsheet dan buku fisik.</p>}
+ {params.delivery&&/^[a-f0-9-]{36}$/i.test(params.delivery)&&<p className="success-notice" role="status">Pengiriman dicatat. <Link href={"/invoices/notes/"+params.delivery+"/print"}>Lihat / cetak kwitansi pengiriman →</Link></p>}
  <Panel title={original?"Salin order sebelumnya":"Order Baru"} detail="Nomor nota 7 digit langsung muncul setelah order berhasil disimpan">
   <OrderComposer products={products} outlets={outletList} requestKey={randomUUID()} canOverride={actor.role!=="marketing"} numberReady={ready} initialOutlet={initialOutlet||""} initialItems={initialItems}/>
  </Panel>
  {actor.role!=="marketing"&&<Panel title="Pengiriman & Nota Keluar" detail={remaining.length+" jenis item menunggu pengiriman"}>
   <DispatchComposer lines={remaining} requestKey={randomUUID()} initialOrderId={params.dispatch||""}/>
  </Panel>}
- <Panel title="Daftar Order" detail={orders.length+" order"}>{orders.length===0?<Empty label="order"/>:<div className="table-wrap"><table><thead><tr><th>No. Kwitansi</th><th>Tanggal</th><th>Outlet</th><th>Status</th><th>Dipesan</th><th>Terkirim</th><th>Nilai order</th><th>Tindakan</th></tr></thead><tbody>{orders.map(o=><tr key={o.id}><td className="mono">{o.document_number||"Order lama tanpa nota — perlu dicocokkan"}</td><td>{o.ordered_on}</td><td>{o.outlet}</td><td>{o.status.replaceAll("_"," ")}</td><td>{o.items}</td><td>{o.shipped}</td><td>{rupiah(o.total)}</td><td><Link href={"/orders/"+o.id}>Detail</Link> · <Link href={"/orders?repeat="+o.id}>Salin</Link> · {o.status!=="delivered"&&o.status!=="cancelled"&&actor.role!=="marketing"&&<Link href={"/orders?dispatch="+o.id}>Kirim</Link>}</td></tr>)}</tbody></table></div>}</Panel>
+ <Panel title="Daftar Order" detail={orders.length+" order"}>{orders.length===0?<Empty label="order"/>:<div className="table-wrap"><table><thead><tr><th>No. Kwitansi</th><th>Tanggal</th><th>Outlet</th><th>Status</th><th>Dipesan</th><th>Terkirim</th><th>Nilai order</th><th>Tindakan</th></tr></thead><tbody>{orders.map(o=><tr key={o.id}><td className="mono">{o.document_number||"Order lama tanpa nota — perlu dicocokkan"}</td><td>{o.ordered_on}</td><td>{o.outlet}</td><td>{o.status.replaceAll("_"," ")}</td><td>{o.items}</td><td>{o.shipped}</td><td>{rupiah(o.total)}</td><td><Link href={"/orders/"+o.id}>Detail</Link> · {actor.role!=="marketing"&&<><Link href={"/receipts/"+o.id+"/print"}>{o.shipped>0?"Cetak kwitansi":"Cetak pesanan"}</Link> · </>}<Link href={"/orders?repeat="+o.id}>Salin</Link> · {o.status!=="delivered"&&o.status!=="cancelled"&&actor.role!=="marketing"&&<Link href={"/orders?dispatch="+o.id}>Kirim</Link>}</td></tr>)}</tbody></table></div>}</Panel>
  </>;
 }

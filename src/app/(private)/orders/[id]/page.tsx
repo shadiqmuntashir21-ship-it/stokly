@@ -23,7 +23,7 @@ export default async function OrderDetail({params,searchParams}:{params:Promise<
  <div style={{padding:16,display:"flex",gap:14,flexWrap:"wrap"}}>
   {actor.role!=="marketing"&&order.status!=="cancelled"&&<Link href={"/orders?dispatch="+id}>Kirim barang →</Link>}
   {actor.role!=="marketing"&&<Link href={"/invoices?pay="+id}>Catat pembayaran →</Link>}
-  {actor.role!=="marketing"&&ledger?.document_number&&<Link href={"/receipts/"+id+"/print"}>Cetak kwitansi →</Link>}
+  {actor.role!=="marketing"&&order.document_number&&<Link href={"/receipts/"+id+"/print"}>{order.items.some(x=>x.shipped>0)?"Cetak kwitansi →":"Cetak bukti pesanan →"}</Link>}
   <Link href="/outlet-returns">Retur / komplain →</Link>
  </div>
  </Panel>
