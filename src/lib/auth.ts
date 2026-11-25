@@ -4,6 +4,7 @@ import { nextCookies } from "better-auth/next-js";
 import { getPool } from "@/lib/db";
 
 export const auth = betterAuth({
+  trustedOrigins: ["https://www.kelapago.web.id", "https://kelapago.web.id", "https://stokly-shadiq.vercel.app"],
   database: getPool(),
   emailAndPassword: { enabled: true, disableSignUp: true, minPasswordLength: 8, maxPasswordLength: 8 },
   disabledPaths: ["/sign-in/email", "/is-username-available"],
