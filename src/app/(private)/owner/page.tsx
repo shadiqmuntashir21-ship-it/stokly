@@ -6,7 +6,7 @@ import {ownerOutlets} from "@/lib/owner-outlets";
 import {ownerOperations} from "@/lib/owner-operations";
 import {ownerCostReadiness} from "@/lib/owner-hpp";
 import {query} from "@/lib/db";
-import {ownerAnalytics} from "@/lib/dashboard-analytics";
+import {ownerAnalytics,salesPeriod} from "@/lib/dashboard-analytics";
 import {TrendChart,CashMovement,OutletRanking} from "@/components/business-charts";
 import {formatMoneyCompact,formatCount} from "@/lib/display-numbers";
 export const dynamic="force-dynamic";
@@ -20,7 +20,8 @@ export default async function OwnerHome({searchParams}:{searchParams:Promise<{fr
  const period=p.all==="1"?parsePeriod():parsePeriod(p.from||currentMonth(),p.to);
  const source=p.view==="live"?"live" as const:"legacy" as const;
  const range=p.range==="1"?1:p.range==="7"?7:p.range==="30"?30:90;
- const custom=p.from&&p.to&&period.from&&period.to?{from:period.from,to:period.to}:undefined;
+ let custom=p.from&&p.to&&period.from&&period.to?{from:period.from,to:period.to}:undefined;
+ let invalidRange=false;if(custom){try{salesPeriod(range,custom);}catch{custom=undefined;invalidRange=true;}}
  const periodLabel=custom?custom.from+" s.d. "+custom.to:range+" hari terakhir";
  const preserve=custom?"from="+custom.from+"&to="+custom.to:"range="+range;
  const [money,outlets,operations,cost,go,reconciliation,analytics]=await Promise.all([
@@ -82,6 +83,7 @@ export default async function OwnerHome({searchParams}:{searchParams:Promise<{fr
    {[1,7,30,90].map(n=><Link key={n} href={"/owner?view="+source+"&range="+n} aria-current={!custom&&range===n?"true":undefined}>{n===1?"Harian":n+" hari"}</Link>)}
    {custom&&<span style={{padding:"8px 12px",fontSize:12,background:"#165639",color:"#fff",borderRadius:10}}>Periode khusus: {custom.from} – {custom.to}</span>}
   </div>
+  {invalidRange&&<p className="form-hint">Rentang tidak valid atau melebihi 730 hari. Grafik dan unduhan memakai periode standar.</p>}
   <div className="quick-links"><a href={"/api/owner/sales-report?source="+source+"&from="+analytics.from+"&to="+analytics.to+"&format=xlsx"}>Unduh Excel Traffic Penjualan</a><a href={"/api/owner/sales-report?source="+source+"&from="+analytics.from+"&to="+analytics.to+"&format=pdf"}>Unduh PDF Traffic Penjualan</a></div>
   <TrendChart points={analytics.points} empty={source==="legacy"?"Tidak ada kuitansi historis pada rentang ini.":"Belum ada penjualan terkirim dalam operasional KELAPA GO yang baru."}/>
   <div className="kg-legend"><span><i style={{background:"#258658"}}/> Penjualan bersih setelah retur</span><span>Sumber: {source==="legacy"?"arsip kuitansi (sebagian perlu audit)":"invoice pengiriman baru"}</span></div>

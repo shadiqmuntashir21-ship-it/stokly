@@ -20,14 +20,14 @@ export function salesPeriod(range:1|7|30|90,custom?:{from:string;to:string}){
  return {from,to};
 }
 export const salesBase=(source:"legacy"|"live")=>source==="legacy"
- ?"SELECT r.issued_on AS day,r.document_number AS number,r.outlet_name AS outlet,r.quantity AS quantity,r.gross,r.return_value AS returned,r.gross-r.return_value AS net FROM legacy_receipts r WHERE r.issued_on BETWEEN $1::date AND $2::date AND r.status<>'VOID'"
- :"SELECT d.delivered_on AS day,d.document_number AS number,o.name AS outlet,COALESCE((SELECT SUM(di.quantity) FROM delivery_note_items di WHERE di.delivery_id=d.id),0)::int AS quantity,i.gross,COALESCE((SELECT SUM(r.credit_amount) FROM delivery_returns r WHERE r.delivery_id=d.id),0) AS returned,i.gross-COALESCE((SELECT SUM(r.credit_amount) FROM delivery_returns r WHERE r.delivery_id=d.id),0) AS net FROM delivery_notes d JOIN delivery_invoices i ON i.delivery_id=d.id AND i.status='issued' JOIN customer_orders co ON co.id=d.order_id JOIN outlets o ON o.id=co.outlet_id WHERE d.delivered_on BETWEEN $1::date AND $2::date";
+ ?"SELECT r.document_number::text AS sale_id,r.issued_on AS day,r.document_number AS number,r.outlet_name AS outlet,r.quantity AS quantity,r.gross,r.return_value AS returned,r.gross-r.return_value AS net FROM legacy_receipts r WHERE r.issued_on BETWEEN $1::date AND $2::date AND r.status<>'VOID'"
+ :"SELECT i.id::text AS sale_id,d.delivered_on AS day,d.document_number AS number,o.name AS outlet,COALESCE((SELECT SUM(di.quantity) FROM delivery_note_items di WHERE di.delivery_id=d.id),0)::int AS quantity,i.gross,COALESCE((SELECT SUM(r.credit_amount) FROM delivery_returns r WHERE r.delivery_id=d.id),0) AS returned,i.gross-COALESCE((SELECT SUM(r.credit_amount) FROM delivery_returns r WHERE r.delivery_id=d.id),0) AS net FROM delivery_notes d JOIN delivery_invoices i ON i.delivery_id=d.id AND i.status='issued' JOIN customer_orders co ON co.id=d.order_id JOIN outlets o ON o.id=co.outlet_id WHERE d.delivered_on BETWEEN $1::date AND $2::date";
 export async function ownerAnalytics(source:"legacy"|"live",range:1|7|30|90,custom?:{from:string;to:string}):Promise<OwnerAnalytics>{
  let period;try{period=salesPeriod(range,custom);}catch{period=salesPeriod(range);}
  const today=period.to,effectiveStart=period.from,days=Math.round((Date.parse(today)-Date.parse(effectiveStart))/86400000)+1,prevStart=shiftDay(effectiveStart,-days),prevEnd=shiftDay(effectiveStart,-1);
  const base=salesBase(source);
  const daily="SELECT day::text,COALESCE(SUM(net),0)::text amount,COUNT(*)::int receipts FROM ("+base+") sales GROUP BY day ORDER BY day";
- const ranking="SELECT outlet AS name,COUNT(*)::int orders,COALESCE(SUM(net),0)::text value FROM ("+base+") sales GROUP BY outlet ORDER BY SUM(net) DESC,outlet LIMIT 5";
+ const ranking="SELECT outlet AS name,COUNT(*)::int orders,COALESCE(SUM(net),0)::text value FROM ("+base+") sales GROUP BY outlet ORDER BY SUM(net) DESC,outlet COLLATE \"C\" LIMIT 5";
  const [currentRows,priorRows,rankingRows,cashRows]=await Promise.all([
   query<RawDay>(daily,[effectiveStart,today]),
   query<RawDay>(daily,[prevStart,prevEnd]),

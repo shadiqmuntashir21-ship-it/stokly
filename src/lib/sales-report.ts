@@ -1,7 +1,7 @@
 import {transaction} from "@/lib/db";
 import {salesBase,salesPeriod} from "@/lib/dashboard-analytics";
 import type {Sheet,Cell} from "@/lib/report-files";
-type Sale={day:string;number:string;outlet:string;quantity:number|null;gross:string;returned:string;net:string;due:string|null;payment_status:string};
+type Sale={day:string;number:string|null;outlet:string;quantity:number|null;gross:string;returned:string;net:string;due:string|null;payment_status:string};
 type Payment={date:string|null;number:string;outlet:string;method:string|null;amount:string;origin:string};
 type Detail={number:string;day:string;outlet:string;product:string;quantity:number;unit_price:string;subtotal:string};
 type Aggregate={name:string;gross:number;returned:number;net:number;receipts:number;quantity:number};
@@ -13,8 +13,8 @@ export async function buildSalesReport(source:"legacy"|"live",from:string,to:str
   await c.query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY");
   const base=salesBase(source);
   const due=source==="legacy"
-   ?"SELECT b.day::text,b.number,b.outlet,b.quantity,b.gross::text,b.returned::text,b.net::text,CASE WHEN v.document_number IS NULL AND r.status='PAID' THEN '0' ELSE v.confirmed_due::text END due,CASE WHEN v.needs_reconciliation OR (v.document_number IS NULL AND r.status<>'PAID') THEN 'Perlu rekonsiliasi' WHEN v.confirmed_due>0 THEN 'Belum lunas' WHEN v.confirmed_due=0 OR r.status='PAID' THEN 'Lunas' ELSE 'Belum terverifikasi' END payment_status FROM ("+base+") b JOIN legacy_receipts r ON r.document_number=b.number LEFT JOIN v_go_unpaid_current v ON v.document_number=b.number"
-   :"SELECT b.day::text,b.number,b.outlet,b.quantity,b.gross::text,b.returned::text,b.net::text,GREATEST(0,b.net-COALESCE(p.paid,0))::text due,CASE WHEN b.net<=COALESCE(p.paid,0) THEN 'Lunas' WHEN COALESCE(p.paid,0)>0 THEN 'Sebagian' ELSE 'Belum dibayar' END payment_status FROM ("+base+") b JOIN delivery_notes d ON d.document_number=b.number JOIN delivery_invoices i ON i.delivery_id=d.id AND i.status='issued' LEFT JOIN LATERAL (SELECT SUM(amount) paid FROM delivery_payments WHERE invoice_id=i.id) p ON true";
+   ?"SELECT b.day::text,b.number,b.outlet,b.quantity,b.gross::text,b.returned::text,b.net::text,CASE WHEN v.document_number IS NULL AND r.status='PAID' THEN '0' ELSE v.confirmed_due::text END due,CASE WHEN v.needs_reconciliation OR (v.document_number IS NULL AND r.status<>'PAID') THEN 'Perlu rekonsiliasi' WHEN v.confirmed_due>0 THEN 'Belum lunas' WHEN v.confirmed_due=0 OR r.status='PAID' THEN 'Lunas' ELSE 'Belum terverifikasi' END payment_status FROM ("+base+") b JOIN legacy_receipts r ON r.document_number=b.sale_id LEFT JOIN v_go_unpaid_current v ON v.document_number=b.number"
+   :"SELECT b.day::text,b.number,b.outlet,b.quantity,b.gross::text,b.returned::text,b.net::text,GREATEST(0,b.net-COALESCE(p.paid,0))::text due,CASE WHEN b.net<=COALESCE(p.paid,0) THEN 'Lunas' WHEN COALESCE(p.paid,0)>0 THEN 'Sebagian' ELSE 'Belum dibayar' END payment_status FROM ("+base+") b JOIN delivery_invoices i ON i.id::text=b.sale_id AND i.status='issued' LEFT JOIN LATERAL (SELECT SUM(amount) paid FROM delivery_payments WHERE invoice_id=i.id) p ON true";
   const sales=(await c.query<Sale>(due+" ORDER BY b.day,b.number LIMIT 50001",[from,to])).rows;
   if(sales.length>50000)throw Error("Pilih periode lebih pendek.");
   const paymentSql=source==="legacy"
@@ -27,7 +27,8 @@ export async function buildSalesReport(source:"legacy"|"live",from:string,to:str
   const days=new Map<string,Aggregate>(),months=new Map<string,Aggregate>(),outlets=new Map<string,Aggregate>(),total=empty("Total");
   for(let d=new Date(from+"T00:00:00Z");d.toISOString().slice(0,10)<=to;d.setUTCDate(d.getUTCDate()+1)){const key=d.toISOString().slice(0,10);days.set(key,empty(key));if(!months.has(key.slice(0,7)))months.set(key.slice(0,7),empty(key.slice(0,7)));}
   for(const s of sales){add(total,s);add(days.get(s.day)!,s);add(months.get(s.day.slice(0,7))!,s);if(!outlets.has(s.outlet))outlets.set(s.outlet,empty(s.outlet));add(outlets.get(s.outlet)!,s);}
-  const rankings=[...outlets.values()].sort((a,b)=>b.net-a.net||a.name.localeCompare(b.name,"id"));
+  const ranked=(await c.query<{name:string}>("SELECT outlet AS name FROM ("+base+") sales GROUP BY outlet ORDER BY SUM(net) DESC,outlet COLLATE \"C\"",[from,to])).rows;
+  const rankings=ranked.map(x=>outlets.get(x.name)!);
   const daily=[...days.values()],monthly=[...months.values()];
   const currentDue=sales.reduce((n,s)=>n+Number(s.due||0),0),unknownDue=sales.filter(s=>s.due===null).length;
   return {source,from,to,total,daily,monthly,rankings,sales,payments,detail,currentDue,unknownDue};

@@ -19,7 +19,7 @@ export async function replaceReservedNumber(c:PoolClient,orderId:string,oldNumbe
   const existing=(await c.query<{status:string;order_id:string|null}>("SELECT status,order_id::text FROM receipt_register WHERE document_number=$1 FOR UPDATE",[oldNumber])).rows[0];
   if(existing&&(existing.status!=="RESERVED"||existing.order_id!==orderId))throw new BusinessError("Nomor lama tidak dapat dikoreksi langsung. Rekonsiliasi Owner diperlukan.");
   if(existing)await c.query("UPDATE receipt_register SET status='VOID',order_id=NULL,actor_id=$2,note=$3 WHERE document_number=$1",[oldNumber,actor,"Koreksi ke "+number+" · "+reason.trim().slice(0,300)]);
-  else await c.query("INSERT INTO receipt_register(document_number,status,actor_id,note) VALUES($1,'VOID',$2,$3)",[oldNumber,actor,"Koreksi ke "+number+" · "+reason.trim().slice(0,300)]);
+  else throw new BusinessError("Nomor lama belum ada pada register. Rekonsiliasi Owner diperlukan sebelum koreksi.");
  }
  await c.query("INSERT INTO receipt_register(document_number,status,order_id,actor_id,note) VALUES($1,'RESERVED',$2,$3,$4)",[number,orderId,actor,"Koreksi nomor fisik · "+reason.trim().slice(0,300)]);
  await c.query("UPDATE customer_orders SET document_number=$2,receipt_number_pending=false WHERE id=$1",[orderId,number]);
