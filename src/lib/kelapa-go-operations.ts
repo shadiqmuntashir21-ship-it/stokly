@@ -121,7 +121,7 @@ export async function createCashEntry(input:{key:string;date:string;direction:"I
   const prior=await c.query("SELECT id FROM cash_ledger_entries WHERE request_key=$1",[input.key]);
   if(prior.rowCount)return;
   const balance=await c.query<{balance:string}>(`SELECT (o.amount+COALESCE((SELECT SUM(CASE WHEN direction='IN' THEN amount ELSE -amount END) FROM cash_ledger_entries
-    WHERE (CASE WHEN category LIKE 'KAS BESAR:%' OR category='PENJUALAN TRANSFER' THEN 'LARGE' ELSE 'SMALL' END)=o.wallet),0))::text balance
+    WHERE voided_at IS NULL AND (CASE WHEN category LIKE 'KAS BESAR:%' OR category='PENJUALAN TRANSFER' THEN 'LARGE' ELSE 'SMALL' END)=o.wallet),0))::text balance
     FROM operational_cash_openings o WHERE wallet=$1`,[input.wallet]);
   if(!balance.rows[0])throw new BusinessError("Owner harus menetapkan saldo awal sumber kas sebelum membeli aset.");
   if(Number(balance.rows[0].balance)<input.amount)throw new BusinessError("Saldo sumber kas tidak mencukupi.");
@@ -143,7 +143,7 @@ export async function moveInventoryAsset(input:{id:string;date:string;kind:strin
  !count(input.quantity)||input.quantity===0||(input.outletId!==""&&!uuid(input.outletId))||input.note.length>400)
   throw new BusinessError("Pergerakan inventaris tidak valid.");
  await transaction(async c=>{
-  const asset=await c.query<{quantity:number}>("SELECT quantity FROM inventory_assets WHERE id=$1 FOR UPDATE",[input.id]);
+  const asset=await c.query<{quantity:number}>("SELECT quantity FROM inventory_assets WHERE id=$1 AND voided_at IS NULL FOR UPDATE",[input.id]);
   if(!asset.rows[0])throw new BusinessError("Inventaris tidak ditemukan.");
   const events=await c.query<{out_total:string;returned:string;lost:string;damaged:string}>(
    "SELECT COALESCE(SUM(quantity) FILTER(WHERE kind='OUT'),0)::text out_total,COALESCE(SUM(quantity) FILTER(WHERE kind='RETURN'),0)::text returned,COALESCE(SUM(quantity) FILTER(WHERE kind='LOST'),0)::text lost,COALESCE(SUM(quantity) FILTER(WHERE kind='DAMAGED'),0)::text damaged FROM inventory_asset_movements WHERE asset_id=$1",

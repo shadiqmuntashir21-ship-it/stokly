@@ -13,7 +13,7 @@ export async function listGrades(){
 }
 export async function listSupplierPrices(){
  return query<{id:string;supplier_name:string;grade_name:string;unit_price:string;effective_at:Date}>(
- "SELECT sp.id::text,s.name supplier_name,g.name grade_name,sp.unit_price::text,sp.effective_at FROM supplier_prices sp JOIN suppliers s ON s.id=sp.supplier_id JOIN coconut_grades g ON g.id=sp.grade_id ORDER BY sp.effective_at DESC LIMIT 60");
+ "SELECT sp.id::text,s.name supplier_name,g.name grade_name,sp.unit_price::text,sp.effective_at FROM supplier_prices sp JOIN suppliers s ON s.id=sp.supplier_id JOIN coconut_grades g ON g.id=sp.grade_id WHERE sp.voided_at IS NULL ORDER BY sp.effective_at DESC LIMIT 60");
 }
 export async function createGrade(input:{code:string;name:string;min:number|null;max:number|null;notes:string}){
  if(!/^[A-Z0-9_-]{2,40}$/.test(input.code.toUpperCase())||input.name.trim().length<2)throw new BusinessError("Kode dan nama grade wajib diisi.");

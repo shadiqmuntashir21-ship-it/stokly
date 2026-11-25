@@ -28,7 +28,7 @@ export async function ownerAnalytics(source:"legacy"|"live",range:7|30|90,custom
   query<RawDay>(daily,[effectiveStart,today]),
   query<RawDay>(daily,[prevStart,prevEnd]),
   query<{name:string;orders:number;value:string}>(ranking,[effectiveStart,today]),
-  query<{direction:string;amount:string}>(`SELECT direction,COALESCE(SUM(amount),0)::text AS amount FROM cash_ledger_entries WHERE entry_date BETWEEN $1::date AND $2::date AND category NOT LIKE 'KAS BESAR:%' AND category<>'PENJUALAN TRANSFER' GROUP BY direction`,[effectiveStart,today])
+  query<{direction:string;amount:string}>(`SELECT direction,COALESCE(SUM(amount),0)::text AS amount FROM cash_ledger_entries WHERE voided_at IS NULL AND entry_date BETWEEN $1::date AND $2::date AND category NOT LIKE 'KAS BESAR:%' AND category<>'PENJUALAN TRANSFER' GROUP BY direction`,[effectiveStart,today])
  ]);
  const byDay=new Map(currentRows.map(x=>[x.day,number(x.amount)]));
  const points:SeriesPoint[]=[];

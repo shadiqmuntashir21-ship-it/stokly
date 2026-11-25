@@ -15,7 +15,7 @@ export async function cashReport(from:string,to:string){
  reportPeriod(from,to);
  return transaction(async c=>{
   await c.query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY");
-  const totals=(await c.query<CashTotal>(`WITH w(wallet) AS (VALUES('SMALL'),('LARGE')), e AS (SELECT *, ${classify} wallet FROM cash_ledger_entries)
+  const totals=(await c.query<CashTotal>(`WITH w(wallet) AS (VALUES('SMALL'),('LARGE')), e AS (SELECT *, ${classify} wallet FROM cash_ledger_entries WHERE voided_at IS NULL)
   SELECT w.wallet,
   CASE WHEN o.amount IS NULL THEN NULL ELSE (o.amount+COALESCE(SUM(CASE WHEN e.direction='IN' THEN e.amount ELSE -e.amount END) FILTER(WHERE e.entry_date<$1::date),0))::text END opening,
   COALESCE(SUM(e.amount) FILTER(WHERE e.entry_date BETWEEN $1 AND $2 AND e.direction='IN'),0)::text incoming,
@@ -24,10 +24,10 @@ export async function cashReport(from:string,to:string){
   COALESCE(SUM(e.amount) FILTER(WHERE e.entry_date BETWEEN $1 AND $2 AND e.direction='OUT' AND regexp_replace(category,'^KAS BESAR: ','')='ASET'),0)::text assets,
   CASE WHEN o.amount IS NULL THEN NULL ELSE (o.amount+COALESCE(SUM(CASE WHEN e.direction='IN' THEN e.amount ELSE -e.amount END) FILTER(WHERE e.entry_date<=$2::date),0))::text END closing
   FROM w LEFT JOIN operational_cash_openings o ON o.wallet=w.wallet LEFT JOIN e ON e.wallet=w.wallet GROUP BY w.wallet,o.amount ORDER BY w.wallet DESC`,[from,to])).rows;
-  const rows=(await c.query<CashRow>(`SELECT entry_date::text date,${classify} wallet,direction,regexp_replace(category,'^KAS BESAR: ','') category,description,amount::text FROM cash_ledger_entries WHERE entry_date BETWEEN $1 AND $2 ORDER BY entry_date,created_at,id LIMIT 10001`,[from,to])).rows;
+  const rows=(await c.query<CashRow>(`SELECT entry_date::text date,${classify} wallet,direction,regexp_replace(category,'^KAS BESAR: ','') category,description,amount::text FROM cash_ledger_entries WHERE voided_at IS NULL AND entry_date BETWEEN $1 AND $2 ORDER BY entry_date,created_at,id LIMIT 10001`,[from,to])).rows;
   if(rows.length>10000)throw new BusinessError("Terlalu banyak transaksi. Pilih periode lebih pendek.");
   const budgets=(await c.query<Budget>(`SELECT d::date::text date,b.amount::text budget,
-  COALESCE((SELECT SUM(e.amount) FROM cash_ledger_entries e WHERE e.entry_date=d::date AND e.direction='OUT' AND (${classify})='SMALL' AND ${operational}),0)::text spent
+  COALESCE((SELECT SUM(e.amount) FROM cash_ledger_entries e WHERE e.voided_at IS NULL AND e.entry_date=d::date AND e.direction='OUT' AND (${classify})='SMALL' AND ${operational}),0)::text spent
   FROM generate_series($1::date,$2::date,'1 day'::interval) d LEFT JOIN cash_daily_budgets b ON b.budget_date=d::date ORDER BY d`,[from,to])).rows;
   return {from,to,totals,rows,budgets};
  });

@@ -43,3 +43,50 @@ export async function correctPurchase(input:{id:string;mode:string;reason:string
   await c.query("INSERT INTO activity_logs(actor_id,action,entity,entity_id) VALUES($1,$2,'coconut_receipt',$3)",[actor,"purchase."+mode,id]);
  });
 }
+
+type CashEntry={id:string;entry_date:string;direction:"IN"|"OUT";category:string;description:string;amount:string;reference_type:string|null;reference_id:string|null;voided_at:string|null};
+type CashAsset={id:string;name:string;quantity:number;vendor:string|null;note:string|null;purchase_date:string|null;total_cost:string|null;unit_price:string|null;voided_at:string|null};
+const walletOf=(category:string)=>category.startsWith("KAS BESAR:")||category==="PENJUALAN TRANSFER"?"LARGE":"SMALL";
+const validAmount=(n:number)=>Number.isFinite(n)&&n>0&&n<=1e9&&Number.isSafeInteger(Math.round(n*100));
+export async function correctCash(input:{id:string;mode:string;reason:string;date:string;wallet:string;category:string;amount:number;description:string;assetName:string;assetQuantity:number;assetVendor:string},actor:string){
+ const {id,mode,reason}=input;
+ if(!uuid(id)||!["edit","void"].includes(mode)||reason.trim().length<5||reason.length>400)throw new BusinessError("Alasan koreksi tidak valid.");
+ return transaction(async c=>{
+  await c.query("LOCK TABLE cash_ledger_entries IN SHARE ROW EXCLUSIVE MODE");
+  const old=(await c.query<CashEntry>("SELECT id::text,entry_date::text,direction,category,description,amount::text,reference_type,reference_id,voided_at::text FROM cash_ledger_entries WHERE id=$1 FOR UPDATE",[id])).rows[0];
+  if(!old||old.voided_at)throw new BusinessError("Transaksi tidak ditemukan atau sudah dibatalkan.");
+  const isAsset=old.reference_type==="asset_purchase";
+  if(old.reference_type&&!isAsset)throw new BusinessError("Pembayaran otomatis tidak dapat diedit langsung di buku kas.");
+  let asset:CashAsset|null=null;
+  if(isAsset){
+   if(!old.reference_id||!uuid(old.reference_id))throw new BusinessError("Relasi aset tidak valid.");
+   asset=(await c.query<CashAsset>("SELECT id::text,name,quantity,vendor,note,purchase_date::text,total_cost::text,unit_price::text,voided_at::text FROM inventory_assets WHERE id=$1 FOR UPDATE",[old.reference_id])).rows[0]||null;
+   if(!asset||asset.voided_at)throw new BusinessError("Aset tidak ditemukan.");
+   if((await c.query("SELECT id FROM inventory_asset_movements WHERE asset_id=$1 LIMIT 1",[asset.id])).rowCount)throw new BusinessError("Aset sudah memiliki pergerakan; rekonsiliasi Owner diperlukan.");
+  }
+  if(mode==="edit"){
+   const allowed=["OPERASIONAL","PEMBELIAN KELAPA","SETORAN","TAMBAHAN DANA","KASBON","BBM/TRANSPORT","LAINNYA"];
+   if(!date(input.date)||!["SMALL","LARGE"].includes(input.wallet)||!validAmount(input.amount)||input.description.trim().length<5||input.description.length>400||(!isAsset&&!allowed.includes(input.category))||(isAsset&&input.category!=="ASET"))throw new BusinessError("Nominal, sumber dana, kategori, tanggal atau keterangan tidak valid.");
+   if(isAsset&&(input.assetName.trim().length<2||input.assetName.length>150||!Number.isSafeInteger(input.assetQuantity)||input.assetQuantity<1||input.assetQuantity>=10000000||input.assetVendor.length>200))throw new BusinessError("Data aset tidak valid.");
+  }
+  const balances=(await c.query<{wallet:string;balance:string}>("SELECT o.wallet,(o.amount+COALESCE((SELECT SUM(CASE WHEN direction='IN' THEN amount ELSE -amount END) FROM cash_ledger_entries WHERE voided_at IS NULL AND id<>$1 AND (CASE WHEN category LIKE 'KAS BESAR:%' OR category='PENJUALAN TRANSFER' THEN 'LARGE' ELSE 'SMALL' END)=o.wallet),0))::text balance FROM operational_cash_openings o",[id])).rows;
+  if(mode==="edit"&&isAsset&&!balances.some(x=>x.wallet===input.wallet))throw new BusinessError("Saldo awal sumber kas belum ditetapkan.");
+  for(const b of balances){
+   const without=Number(b.balance),sign=old.direction==="IN"?1:-1;
+   const before=without+(walletOf(old.category)===b.wallet?sign*Number(old.amount):0);
+   const after=without+(mode==="edit"&&input.wallet===b.wallet?sign*input.amount:0);
+   if(after<0&&after<before-0.001)throw new BusinessError("Koreksi akan memperburuk saldo kas negatif.");
+  }
+  if(mode==="void"){
+   await c.query("UPDATE cash_ledger_entries SET voided_at=now() WHERE id=$1",[id]);
+   if(asset)await c.query("UPDATE inventory_assets SET voided_at=now() WHERE id=$1",[asset.id]);
+  }else{
+   const category=input.wallet==="LARGE"?"KAS BESAR: "+input.category:input.category;
+   const desc=asset?input.assetName.trim()+" · "+input.description.trim().slice(0,240):input.description.trim();
+   await c.query("UPDATE cash_ledger_entries SET entry_date=$2,category=$3,description=$4,amount=$5 WHERE id=$1",[id,input.date,category,desc,input.amount]);
+   if(asset)await c.query("UPDATE inventory_assets SET name=$2,quantity=$3,purchase_date=$4,vendor=$5,unit_price=round($6::numeric/$3::numeric,2),total_cost=$6,note=$7 WHERE id=$1",[asset.id,input.assetName.trim(),input.assetQuantity,input.date,input.assetVendor.trim()||null,input.amount,input.description.trim()]);
+  }
+  await c.query("INSERT INTO transaction_correction_events(entity_type,entity_id,action,reason,previous_state,next_state,actor_id) VALUES('cash',$1,$2,$3,$4::jsonb,$5::jsonb,$6)",[id,mode,reason.trim(),JSON.stringify({entry:old,asset}),JSON.stringify(mode==="void"?{voided:true}:input),actor]);
+  await c.query("INSERT INTO activity_logs(actor_id,action,entity,entity_id) VALUES($1,$2,'cash_ledger_entry',$3)",[actor,"cash."+mode,id]);
+ });
+}

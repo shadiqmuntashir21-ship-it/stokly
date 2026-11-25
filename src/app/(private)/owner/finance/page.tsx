@@ -7,10 +7,11 @@ import {PageHead,Panel,rupiah} from "@/components/ui";
 export const dynamic="force-dynamic";
 export default async function OwnerFinance({searchParams}:{searchParams:Promise<{from?:string;to?:string}>}){
  await requireOwner();const p=await searchParams;const period=parsePeriod(p.from,p.to);
- const [m,hpp,cost,expenses,dailyHpp]=await Promise.all([
+ const [m,hpp,cost,expenses,dailyHpp,cashSpending]=await Promise.all([
   ownerMoney(period),ownerProductHpp(),ownerCostReadiness(),
   query<{cost_class:string;amount:string}>(`SELECT c.cost_class,SUM(e.amount)::text amount FROM expense_entries e JOIN expense_categories c ON c.code=e.category_code WHERE ($1::date IS NULL OR e.incurred_on>=$1) AND ($2::date IS NULL OR e.incurred_on<=$2) GROUP BY c.cost_class ORDER BY c.cost_class`,[period.from,period.to]),
-  query<{product:string;qty:number;cost:string;unit_cost:string}>("SELECT p.name product,SUM(o.quantity)::int qty,ROUND(SUM(o.quantity*o.unit_cost),2)::text cost,ROUND(SUM(o.quantity*o.unit_cost)/NULLIF(SUM(o.quantity),0),2)::text unit_cost FROM coconut_production_day_outputs o JOIN products p ON p.id=o.product_id JOIN coconut_production_days d ON d.id=o.production_id WHERE ($1::date IS NULL OR d.production_date>=$1) AND ($2::date IS NULL OR d.production_date<=$2) GROUP BY p.name ORDER BY p.name",[period.from,period.to])
+  query<{product:string;qty:number;cost:string;unit_cost:string}>("SELECT p.name product,SUM(o.quantity)::int qty,ROUND(SUM(o.quantity*o.unit_cost),2)::text cost,ROUND(SUM(o.quantity*o.unit_cost)/NULLIF(SUM(o.quantity),0),2)::text unit_cost FROM coconut_production_day_outputs o JOIN products p ON p.id=o.product_id JOIN coconut_production_days d ON d.id=o.production_id WHERE ($1::date IS NULL OR d.production_date>=$1) AND ($2::date IS NULL OR d.production_date<=$2) GROUP BY p.name ORDER BY p.name",[period.from,period.to]),
+  query<{wallet:string;category:string;amount:string}>(`SELECT CASE WHEN category LIKE 'KAS BESAR:%' THEN 'Kas Besar' ELSE 'Kas Kecil' END wallet,regexp_replace(category,'^KAS BESAR: ','') category,SUM(amount)::text amount FROM cash_ledger_entries WHERE voided_at IS NULL AND direction='OUT' AND ($1::date IS NULL OR entry_date>=$1) AND ($2::date IS NULL OR entry_date<=$2) GROUP BY 1,2 ORDER BY 1,2`,[period.from,period.to])
  ]);
  const net=Number(m.gross)-Number(m.returned);
  return <>
@@ -39,6 +40,7 @@ export default async function OwnerFinance({searchParams}:{searchParams:Promise<
    <div className="table-wrap"><table><thead><tr><th>Jenis biaya</th><th>Nominal periode</th></tr></thead><tbody>{expenses.map(x=><tr key={x.cost_class}><td>{x.cost_class}</td><td>{rupiah(x.amount)}</td></tr>)}</tbody></table></div>
    <p className="form-hint">Biaya produksi yang sudah dialokasikan tidak boleh dikurangkan lagi sebagai biaya operasional saat menghitung laba. Biaya BBM dan transportasi baru dicatat lewat Kas Kecil; data biaya historis tetap tersimpan sebagai arsip.</p>
   </Panel>
+  <Panel title="Pengeluaran buku kas menurut sumber dana" detail="Operasional dan aset ditampilkan terpisah, bukan dihitung dua kali sebagai beban"><div className="table-wrap"><table><thead><tr><th>Sumber dana</th><th>Kategori</th><th>Nominal</th></tr></thead><tbody>{cashSpending.map(x=><tr key={x.wallet+x.category}><td>{x.wallet}</td><td>{x.category}</td><td>{rupiah(x.amount)}</td></tr>)}</tbody></table></div><p className="form-hint">Pembelian aset mengurangi saldo kas tetapi bukan otomatis beban operasional. Rekap buku kas tidak dijumlahkan dengan modul biaya tanpa rekonsiliasi.</p><p><Link href="/cash">Laporan kas, anggaran dan unduhan Excel/PDF →</Link></p></Panel>
   <Panel title="Kelola keuangan"><div className="quick-links">
    <Link href="/expenses">Catat & lihat biaya operasional →</Link>
    <Link href="/costing">Alokasi HPP produksi →</Link>
