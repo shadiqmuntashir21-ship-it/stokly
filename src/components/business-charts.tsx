@@ -1,4 +1,5 @@
 import {rupiah} from "@/components/ui";
+import {formatMoneyCompact,formatCount} from "@/lib/display-numbers";
 export type SeriesPoint={label:string;value:number};
 const idr=(n:number)=>new Intl.NumberFormat("id-ID").format(Math.round(n));
 const compact=(n:number)=>Math.abs(n)>=1000000?(n/1000000).toLocaleString("id-ID",{maximumFractionDigits:1})+" jt":Math.abs(n)>=1000?(n/1000).toLocaleString("id-ID",{maximumFractionDigits:0})+" rb":idr(n);
@@ -34,8 +35,13 @@ export function OutletRanking({items}:{items:{name:string;value:number;orders:nu
  const max=Math.max(1,...items.map(x=>x.value));
  return <div className="kg-rank-list">{items.map((x,i)=><div key={x.name} className="kg-rank-row">
   <span className="kg-rank-number">{String(i+1).padStart(2,"0")}</span>
-  <div className="kg-rank-main"><div className="kg-meter-label"><strong>{x.name}</strong><b>{rupiah(x.value)}</b></div><div className="kg-meter-track"><div style={{width:(x.value/max*100)+"%",background:i===0?"#86C846":"#2D8B65"}}/></div><small>{idr(x.orders)} kuitansi</small></div>
+  <div className="kg-rank-main">
+   <strong className="kg-rank-name" title={x.name}>{x.name}</strong>
+   <div className="kg-meter-track"><div style={{width:(x.value/max*100)+"%",background:i===0?"#86C846":"#2D8B65"}}/></div>
+   <div className="kg-rank-details"><span>{formatCount(x.orders)} kuitansi</span><strong title={rupiah(x.value)}>{formatMoneyCompact(x.value)}</strong></div>
+  </div>
  </div>)}</div>;
+
 }
 export function QualityBars({items}:{items:{label:string;used:number;damaged:number}[]}){
  if(!items.some(x=>x.used>0))return <div className="kg-chart-empty"><strong>Belum ada produksi tercatat</strong><span>Grafik akan muncul setelah Admin mencatat produksi harian.</span></div>;

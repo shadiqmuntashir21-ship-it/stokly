@@ -46,3 +46,77 @@
 
 .brand-image-wrap{background:#08432F;flex-basis:69px;width:69px;height:69px}
 .brand-compact .brand-image-wrap{height:53px}
+
+/* Owner pages: executive layout, accessible numbers, consistent spacing */
+.kg-owner-page{width:100%;min-width:0;display:flex;flex-direction:column;gap:0}
+.kg-owner-page .page-head{margin-bottom:23px}
+.kg-owner-page .page-head h1{font-size:clamp(25px,2.5vw,33px);line-height:1.16;overflow-wrap:anywhere}
+.kg-owner-page .page-head .muted{max-width:870px;font-size:13px;color:#61786b}
+.kg-owner-page .panel{min-width:0;border-radius:18px;border:1px solid #e0e9dd;box-shadow:0 5px 20px rgba(28,54,36,.035);margin-bottom:19px}
+.kg-owner-page .panel-head{padding:18px 22px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px 22px}
+.kg-owner-page .panel-head h2{font-size:16px;line-height:1.35;color:#194433;max-width:100%}
+.kg-owner-page .panel-head .small-muted{font-size:12px;color:#657b70;max-width:100%;line-height:1.5}
+.kg-owner-page .metrics-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:15px;margin-bottom:21px}
+.kg-owner-page .kg-owner-kpis .metric{min-width:0;position:relative;padding:20px 22px;border:1px solid #e2eade;border-radius:17px;box-shadow:0 5px 18px rgba(24,53,36,.035)}
+.kg-owner-page .kg-owner-kpis .metric-label{font-size:12px;color:#5d7769;line-height:1.5}
+.kg-owner-page .kg-owner-kpis .metric strong{display:block;margin:12px 0 10px;font-size:clamp(22px,2.15vw,29px);line-height:1.18;letter-spacing:-.9px;white-space:normal;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.kg-owner-page .kg-owner-kpis .dashboard-stat-foot{font-size:11px;color:#478365}
+.kg-exact-value{display:block;font-size:11px;color:#688276;font-weight:550;line-height:1.5;overflow-wrap:anywhere}
+.kg-owner-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;align-items:stretch;margin:0 0 20px}
+.kg-owner-grid>.panel{margin-bottom:0;min-width:0}
+.kg-owner-grid .panel-head{min-height:74px}
+.kg-owner-grid .kg-rank-list{padding:16px 22px;display:grid;gap:19px}
+.kg-owner-grid .kg-rank-row{min-width:0;display:flex;gap:13px}
+.kg-owner-grid .kg-rank-main{min-width:0;flex:1}
+.kg-rank-name{display:block;font-size:13px;line-height:1.4;white-space:normal;overflow-wrap:anywhere;color:#194433;margin-bottom:10px}
+.kg-rank-details{display:flex;gap:8px;align-items:baseline;justify-content:space-between;flex-wrap:wrap;margin-top:7px;font-size:12px;color:#667e70}
+.kg-rank-details strong{font-size:13px;color:#174a32;font-variant-numeric:tabular-nums;white-space:nowrap}
+.kg-rank-row .kg-meter-track{height:7px}
+.kg-panel-foot{margin:0;padding:8px 22px 18px;font-size:12px;color:#367551}
+.kg-alert-list{padding:8px 20px;display:grid}
+.kg-alert-item{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #e9eee8;padding:14px 0;min-width:0}
+.kg-alert-item:last-child{border-bottom:none}
+.kg-alert-item div{min-width:0}
+.kg-alert-item strong{display:block;font-size:13px;line-height:1.35;color:#224b35}
+.kg-alert-item div span{display:block;font-size:11px;color:#70877a;margin-top:4px}
+.kg-alert-count{display:grid;place-items:center;min-width:34px;height:29px;border-radius:10px;padding:0 9px;flex-shrink:0;font-size:12px;font-weight:800;background:#f0f4ed;color:#537565}
+.kg-alert-count.is-warning{background:#fff3dc;color:#966b24}
+.kg-owner-page .kg-insight-list{padding:15px 19px;gap:12px}
+.kg-owner-page .kg-insight{padding:13px 15px}
+.kg-owner-page .kg-insight strong{font-size:13px}
+.kg-owner-page .kg-insight p{font-size:12px}
+.kg-owner-page .kg-meter-label{align-items:flex-start}
+.kg-owner-page .kg-meter-label strong{overflow-wrap:anywhere;min-width:0}
+.kg-owner-page .kg-meter-label b{white-space:normal;text-align:right}
+.kg-owner-page .kg-chart-wrap{width:100%;min-width:0}
+.kg-owner-page .kg-analytics-header{margin-top:6px}
+.kg-owner-page .table-wrap{max-width:100%;overflow:auto;overscroll-behavior-x:contain}
+.kg-owner-page table{width:100%;border-collapse:separate;border-spacing:0;white-space:normal;font-variant-numeric:tabular-nums}
+.kg-owner-page th,.kg-owner-page td{padding:14px 17px;font-size:12px;vertical-align:middle;line-height:1.5}
+.kg-owner-page th{color:#526e5f;font-size:10px;white-space:normal;position:sticky;top:0;background:#f5f8f3;z-index:1}
+.kg-owner-page td{color:#36584a;overflow-wrap:anywhere}
+.kg-owner-page tbody tr:nth-child(even){background:#fbfcfa}
+.kg-owner-page tbody tr:hover{background:#f2f8f0}
+.kg-owner-page .kg-money-cell{white-space:nowrap;color:#1c593b;font-weight:700}
+.kg-legacy-page .kg-owner-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+.kg-legacy-page .kg-owner-kpis .metric{display:flex;flex-direction:column;justify-content:center}
+.kg-legacy-page .kg-owner-kpis .metric strong{font-size:clamp(22px,2vw,28px);margin:12px 0 3px}
+.kg-legacy-page .panel>p{padding:0 20px}
+.kg-legacy-page .table-wrap td:nth-child(n+3){font-variant-numeric:tabular-nums}
+@media(max-width:1160px){
+ .kg-owner-page .metrics-grid,.kg-legacy-page .kg-owner-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:780px){
+ .kg-owner-grid{grid-template-columns:minmax(0,1fr)}
+ .kg-owner-page .metrics-grid,.kg-legacy-page .kg-owner-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .kg-owner-page .panel-head{padding:15px 17px}
+ .kg-owner-page .kg-owner-kpis .metric{padding:15px}
+ .kg-owner-page .kg-owner-kpis .metric strong{font-size:22px}
+ .kg-owner-page .kg-rank-list{padding:14px 16px}
+ .kg-owner-page th,.kg-owner-page td{padding:11px 12px}
+}
+@media(max-width:460px){
+ .kg-owner-page .metrics-grid,.kg-legacy-page .kg-owner-kpis{grid-template-columns:1fr}
+ .kg-owner-page .kg-owner-kpis .metric strong{font-size:26px}
+ .kg-rank-details{align-items:flex-start}
+}

@@ -3,6 +3,7 @@ import {requireOwner} from "@/lib/access";
 import {query} from "@/lib/db";
 import {legacyReceiptsSummary,legacyOutletSummary} from "@/lib/legacy-payments";
 import {PageHead,Panel,rupiah} from "@/components/ui";
+import {formatMoneyCompact,formatCount} from "@/lib/display-numbers";
 export const dynamic="force-dynamic";
 type Source={source_sheet:string;count:number};
 type CashGroup={category:string;entry_count:number;total_in:string;total_out:string};
@@ -31,46 +32,46 @@ export default async function KelapaGoHistory({searchParams}:{searchParams:Promi
   if(selected==="SUPPLIER")return a.map((s,i)=>[3,4].includes(i)&&s.length>4?"••••"+s.slice(-4):s);
   return a;
  };
- return <>
+ return <div className="kg-owner-page kg-legacy-page">
  <PageHead eyebrow="OWNER / DATA AWAL" title="KELAPA GO — Migrasi & Rekap Otomatis" description="Semua sheet yang diizinkan tersimpan sebagai sumber referensi. Pivot dihitung ulang dari transaksi; tidak ditambahkan sebagai penjualan ganda."/>
- <div className="metrics-grid">
-  <section className="metric"><div className="metric-label">Kwitansi historis</div><strong>{summary.stat.receipts}</strong></section>
-  <section className="metric"><div className="metric-label">Penjualan historis bruto</div><strong>{rupiah(summary.stat.gross)}</strong></section>
-  <section className="metric"><div className="metric-label">Piutang terkonfirmasi</div><strong>{rupiah(summary.stat.unpaid_amount)}</strong></section>
-  <section className="metric"><div className="metric-label">Stok historis terakhir*</div><strong>{stock[0]?.quantity??"—"} butir</strong></section>
+ <div className="metrics-grid kg-owner-kpis">
+  <section className="metric"><div className="metric-label">Kwitansi historis</div><strong>{formatCount(summary.stat.receipts)}</strong><small className="kg-exact-value">{formatCount(summary.stat.receipts)} kuitansi</small></section>
+  <section className="metric"><div className="metric-label">Penjualan historis bruto</div><strong title={rupiah(summary.stat.gross)}>{formatMoneyCompact(summary.stat.gross)}</strong><small className="kg-exact-value">{rupiah(summary.stat.gross)}</small></section>
+  <section className="metric"><div className="metric-label">Piutang terkonfirmasi</div><strong title={rupiah(summary.stat.unpaid_amount)}>{formatMoneyCompact(summary.stat.unpaid_amount)}</strong><small className="kg-exact-value">{rupiah(summary.stat.unpaid_amount)}</small></section>
+  <section className="metric"><div className="metric-label">Stok historis terakhir*</div><strong>{stock[0]?.quantity==null?"—":formatCount(stock[0].quantity)+" butir"}</strong><small className="kg-exact-value">Snapshot historis, belum stok fisik</small></section>
  </div>
  <Panel title="Pivot UNPAID — otomatis" detail="Dihitung dari KWITANSI dan pembayaran yang sudah dicatat dalam KELAPA GO">
   <p className="form-hint">Kuitansi UNPAID yang sudah dibayar melalui KELAPA GO langsung berkurang dari daftar ini. Kuitansi status PARTIAL/blank memerlukan rekonsiliasi karena jumlah pembayaran lama belum diketahui secara pasti.</p>
   <p><Link href="/invoices/legacy">Lihat, cari dan catat pembayaran kuitansi lama →</Link></p>
   <div className="table-wrap"><table><thead><tr><th>Nota</th><th>Outlet</th><th>Tanggal</th><th>Sisa pasti</th><th>Status</th></tr></thead><tbody>
-   {summary.unpaid.slice(0,35).map(x=><tr key={x.document_number}><td>{x.document_number}</td><td>{x.outlet_name}</td><td>{x.issued_on||"—"}</td><td>{x.needs_reconciliation?"Perlu cek":rupiah(x.confirmed_due??0)}</td><td>{x.status}</td></tr>)}
+   {summary.unpaid.slice(0,35).map(x=><tr key={x.document_number}><td>{x.document_number}</td><td>{x.outlet_name}</td><td>{x.issued_on||"—"}</td><td>{x.needs_reconciliation?"Perlu cek":formatMoneyCompact(x.confirmed_due??0)}</td><td>{x.status}</td></tr>)}
   </tbody></table></div>
  </Panel>
  <Panel title="Pivot Kwitansi / JUALAN — ringkasan outlet otomatis">
   <div className="table-wrap"><table><thead><tr><th>Outlet</th><th>Nota</th><th>PCS</th><th>Penjualan bersih historis</th><th>Piutang pasti</th><th>Butuh rekonsiliasi</th></tr></thead><tbody>
-   {outlets.slice(0,60).map(x=><tr key={x.outlet_name}><td>{x.outlet_name}</td><td>{x.receipt_count}</td><td>{x.total_pcs}</td><td>{rupiah(x.net_sales)}</td><td>{rupiah(x.confirmed_unpaid)}</td><td>{x.needs_reconciliation}</td></tr>)}
+   {outlets.slice(0,60).map(x=><tr key={x.outlet_name}><td>{x.outlet_name}</td><td>{formatCount(x.receipt_count)}</td><td>{formatCount(x.total_pcs)}</td><td><span className="kg-money-cell" title={rupiah(x.net_sales)}>{formatMoneyCompact(x.net_sales)}</span></td><td><span className="kg-money-cell" title={rupiah(x.confirmed_unpaid)}>{formatMoneyCompact(x.confirmed_unpaid)}</span></td><td>{formatCount(x.needs_reconciliation)}</td></tr>)}
   </tbody></table></div>
   <p className="form-hint">Angka historis dan transaksi baru dipisahkan, sehingga laporan tidak menggandakan kuitansi yang sama.</p>
  </Panel>
  <Panel title="Pivot Kas Kecil historis — rekap kategori Excel">
   <div className="table-wrap"><table><thead><tr><th>Kategori</th><th>Jumlah catatan</th><th>Kas masuk</th><th>Kas keluar</th></tr></thead><tbody>
-   {groups.map(x=><tr key={x.category}><td>{x.category}</td><td>{x.entry_count}</td><td>{rupiah(x.total_in)}</td><td>{rupiah(x.total_out)}</td></tr>)}
+   {groups.map(x=><tr key={x.category}><td>{x.category}</td><td>{formatCount(x.entry_count)}</td><td><span className="kg-money-cell" title={rupiah(x.total_in)}>{formatMoneyCompact(x.total_in)}</span></td><td><span className="kg-money-cell" title={rupiah(x.total_out)}>{formatMoneyCompact(x.total_out)}</span></td></tr>)}
   </tbody></table></div><p><Link href="/cash">Buku kas kecil operasional →</Link></p>
  </Panel>
  <Panel title="JUALAN harian — dihitung otomatis">
   <div className="table-wrap"><table><thead><tr><th>Tanggal</th><th>Kwitansi</th><th>PCS</th><th>Penjualan bruto</th><th>Retur</th><th>Penjualan bersih</th></tr></thead><tbody>
-   {days.map(d=><tr key={d.issued_on}><td>{d.issued_on}</td><td>{d.receipt_count}</td><td>{d.pieces}</td><td>{rupiah(d.gross)}</td><td>{rupiah(d.return_value)}</td><td>{rupiah(d.net_sales)}</td></tr>)}
+   {days.map(d=><tr key={d.issued_on}><td>{d.issued_on}</td><td>{formatCount(d.receipt_count)}</td><td>{formatCount(d.pieces)}</td><td><span className="kg-money-cell" title={rupiah(d.gross)}>{formatMoneyCompact(d.gross)}</span></td><td><span className="kg-money-cell" title={rupiah(d.return_value)}>{formatMoneyCompact(d.return_value)}</span></td><td><span className="kg-money-cell" title={rupiah(d.net_sales)}>{formatMoneyCompact(d.net_sales)}</span></td></tr>)}
   </tbody></table></div>
  </Panel>
  <Panel title="STOK OUTLET — rekap histori per tanggal" detail="Rekap otomatis dari kuitansi historis, bukan angka pivot yang dihitung ulang sebagai transaksi">
   <div className="table-wrap"><table><thead><tr><th>Tanggal</th><th>Outlet</th><th>PCS</th><th>Nota</th><th>Penjualan</th></tr></thead><tbody>
-   {perOutlet.map((x,i)=><tr key={x.issued_on+"-"+x.outlet_name+"-"+i}><td>{x.issued_on}</td><td>{x.outlet_name}</td><td>{x.pieces}</td><td>{x.receipt_count}</td><td>{rupiah(x.net_sales)}</td></tr>)}
+   {perOutlet.map((x,i)=><tr key={x.issued_on+"-"+x.outlet_name+"-"+i}><td>{x.issued_on}</td><td>{x.outlet_name}</td><td>{formatCount(x.pieces)}</td><td>{formatCount(x.receipt_count)}</td><td><span className="kg-money-cell" title={rupiah(x.net_sales)}>{formatMoneyCompact(x.net_sales)}</span></td></tr>)}
   </tbody></table></div>
   <p className="form-hint">Merupakan pergerakan penjualan per outlet, bukan saldo keranjang atau stok fisik yang masih berada di outlet.</p>
  </Panel>
  <Panel title="Kasbon — daftar otomatis">
   <div className="table-wrap"><table><thead><tr><th>Tanggal</th><th>Uraian</th><th>Nominal keluar</th><th>Sumber</th></tr></thead><tbody>
-   {advances.map((x,i)=><tr key={(x.source_row??"new")+"-"+i}><td>{x.entry_date??"—"}</td><td>{x.description}</td><td>{rupiah(x.amount)}</td><td>{x.origin==="historical"?"Kas kecil lama":"Kas kecil baru"}</td></tr>)}
+   {advances.map((x,i)=><tr key={(x.source_row??"new")+"-"+i}><td>{x.entry_date??"—"}</td><td>{x.description}</td><td><span className="kg-money-cell" title={rupiah(x.amount)}>{formatMoneyCompact(x.amount)}</span></td><td>{x.origin==="historical"?"Kas kecil lama":"Kas kecil baru"}</td></tr>)}
   </tbody></table></div>
   <p className="form-hint">Kasbon merupakan uang muka/piutang petugas, bukan otomatis biaya laba rugi. Pelunasan dan sisa kasbon lama perlu direkonsiliasi dengan catatan sumber.</p>
  </Panel>
@@ -79,9 +80,9 @@ export default async function KelapaGoHistory({searchParams}:{searchParams:Promi
    <option value="">Pilih sheet</option>{sourceList.map(s=><option key={s.source_sheet} value={s.source_sheet}>{s.source_sheet.trim()} · {s.count} baris</option>)}
   </select></label><button type="submit" className="primary-button">Tampilkan</button></form>
   {selected&&<div className="table-wrap"><table><thead><tr><th>Baris</th><th>Isi sumber (maks. 12 kolom pertama)</th></tr></thead><tbody>
-   {rows.map(x=><tr key={x.source_row}><td>{x.source_row}</td><td>{redacted(x).filter(Boolean).join(" · ").slice(0,700)}</td></tr>)}
+   {rows.map(x=><tr key={formatCount(x.source_row)}><td>{formatCount(x.source_row)}</td><td>{redacted(x).filter(Boolean).join(" · ").slice(0,700)}</td></tr>)}
   </tbody></table></div>}
   <p className="form-hint">*Saldo STOCK KM adalah angka historis tertulis, belum dianggap stok fisik operasional sampai cocok dengan hasil penghitungan ulang. Data karyawan dan rekening yang sensitif tidak ditampilkan lengkap. Data Produksi dan NOTA KELUAR tidak diimpor.</p>
  </Panel>
- </>;
+ </div>;
 }

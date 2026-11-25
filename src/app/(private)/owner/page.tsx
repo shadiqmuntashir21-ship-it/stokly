@@ -8,6 +8,7 @@ import {ownerCostReadiness} from "@/lib/owner-hpp";
 import {query} from "@/lib/db";
 import {ownerAnalytics} from "@/lib/dashboard-analytics";
 import {TrendChart,CashMovement,OutletRanking} from "@/components/business-charts";
+import {formatMoneyCompact,formatCount} from "@/lib/display-numbers";
 export const dynamic="force-dynamic";
 const currentMonth=()=>{
  const d=new Intl.DateTimeFormat("sv-SE",{timeZone:"Asia/Makassar",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
@@ -33,10 +34,10 @@ export default async function OwnerHome({searchParams}:{searchParams:Promise<{fr
  ]);
  const cards=[
   {title:"Penjualan outlet bersih",value:rupiah(Number(money.gross)-Number(money.returned)),href:"/owner/finance"},
-  {title:"Pembayaran masuk periode",value:rupiah(money.payments),href:"/owner/finance"},
-  {title:"Sisa piutang seluruh periode",value:rupiah(money.outstanding),href:"/owner/outlets"},
-  {title:"Biaya tercatat periode",value:rupiah(money.expenses),href:"/owner/finance"},
-  {title:"Order periode terpilih",value:String(money.orders),href:"/owner/outlets"},
+  {title:"Pembayaran masuk periode",value:formatMoneyCompact(money.payments),href:"/owner/finance"},
+  {title:"Sisa piutang seluruh periode",value:formatMoneyCompact(money.outstanding),href:"/owner/outlets"},
+  {title:"Biaya tercatat periode",value:formatMoneyCompact(money.expenses),href:"/owner/finance"},
+  {title:"Order periode terpilih",value:formatCount(money.orders),href:"/owner/outlets"},
   {title:"Outlet aktif",value:String(outlets.filter(x=>x.orders>0).length)+" / "+outlets.length,href:"/owner/outlets"}
  ];
  const alerts=[
@@ -47,7 +48,7 @@ export default async function OwnerHome({searchParams}:{searchParams:Promise<{fr
   {title:"Refund perlu diselesaikan",value:money.refund_pending_count,href:"/invoices"},
   {title:"Produksi belum selesai HPP",value:cost.incomplete_runs,href:"/costing"}
  ];
- return <>
+ return <div className="kg-owner-page">
  <PageHead eyebrow="OWNER / BUSINESS CONTROL CENTER" title="Beranda Bisnis" description="Pantau penjualan, keuangan, outlet, dan pekerjaan prioritas. Owner tidak perlu membuka setiap form operasional."/>
  <Panel title="Periode laporan" detail="Saldo piutang selalu menunjukkan saldo seluruh waktu">
   <form method="get" className="form-grid">
@@ -66,7 +67,7 @@ export default async function OwnerHome({searchParams}:{searchParams:Promise<{fr
    <p><Link href="/owner/legacy">Periksa laporan historis →</Link> · <Link href="/cash">Periksa kas →</Link> · <Link href="/products">Periksa stok →</Link></p>
   </div>
  </Panel>:null}
- <div className="metrics-grid">{cards.map(c=><Link key={c.title} href={c.href} className="metric" style={{textDecoration:"none",color:"inherit",display:"block"}}>
+ <div className="metrics-grid kg-owner-kpis">{cards.map(c=><Link key={c.title} href={c.href} className="metric" style={{textDecoration:"none",color:"inherit",display:"block"}}>
   <div className="metric-label">{c.title}</div><strong>{c.value}</strong><span className="dashboard-stat-foot">Lihat detail →</span>
  </Link>)}</div>
  <div className="kg-analytics-header">
@@ -84,21 +85,21 @@ export default async function OwnerHome({searchParams}:{searchParams:Promise<{fr
   <TrendChart points={analytics.points} empty={source==="legacy"?"Tidak ada kuitansi historis pada rentang ini.":"Belum ada penjualan terkirim dalam operasional KELAPA GO yang baru."}/>
   <div className="kg-legend"><span><i style={{background:"#258658"}}/> Penjualan bersih setelah retur</span><span>Sumber: {source==="legacy"?"arsip kuitansi (sebagian perlu audit)":"invoice pengiriman baru"}</span></div>
  </Panel>
- <div className="dash-columns">
+ <div className="kg-owner-grid kg-owner-priorities">
+  <Panel title="Prioritas Operasional" detail="Kondisi terbaru dari transaksi">
+   <div className="kg-alert-list">{alerts.map(a=><Link className="kg-alert-item" key={a.title} href={a.href}><div><strong>{a.title}</strong><span>{a.value===0?"Tidak ada tindakan tertunda":a.value.toLocaleString("id-ID")+" memerlukan perhatian"}</span></div><span className={"kg-alert-count "+(a.value>0?"is-warning":"")}>{a.value.toLocaleString("id-ID")}</span></Link>)}</div>
+  </Panel>
+  <Panel title="Top 5 Outlet" detail={(source==="legacy"?"Data historis":"Operasional baru")+" · "+periodLabel}>
+   <OutletRanking items={analytics.rankings}/>
+   <p className="kg-panel-foot"><Link href={source==="legacy"?"/owner/legacy":"/owner/outlets"}>Lihat seluruh outlet →</Link></p>
+  </Panel>
+ </div>
+ <div className="kg-owner-grid kg-owner-secondary">
   <Panel title="Insight Otomatis" detail="Berdasarkan data tercatat dan catatan audit">
    <div className="kg-insight-list">
     {analytics.previous>0?<div className="kg-insight"><strong>{analytics.current>=analytics.previous?"↑ Penjualan meningkat":"↓ Penjualan menurun"} {Math.abs((analytics.current/analytics.previous-1)*100).toLocaleString("id-ID",{maximumFractionDigits:1})}%</strong><p>Perbandingan dengan {analytics.days} hari sebelumnya. Saat ini {rupiah(analytics.current)}, sebelumnya {rupiah(analytics.previous)}.</p></div>:<div className="kg-insight"><strong>{analytics.current>0?"Ada penjualan tercatat pada periode ini":"Belum ada penjualan pada periode ini"}</strong><p>{analytics.current>0?"Periode pembanding sebelumnya belum memiliki transaksi.":"Tunggu transaksi riil sebelum menyimpulkan tren penjualan."}</p></div>}
     {analytics.rankings[0]?<div className="kg-insight"><strong>Outlet terbesar: {analytics.rankings[0].name}</strong><p>Kontribusi {rupiah(analytics.rankings[0].value)} dalam {analytics.days} hari terakhir.</p></div>:null}
     {operations.low_stock>0?<div className="kg-insight"><strong>{operations.low_stock} produk di bawah batas stok</strong><p>Periksa kebutuhan produksi dan pengiriman sebelum menerima order baru.</p></div>:null}
-    <div className="dash-columns">
-  <Panel title="Peringatan & pekerjaan penting" detail="Diperbarui dari data transaksi">
-   <div className="simple-list">{alerts.map(a=><div key={a.title}><span><strong>{a.title}</strong><small>{a.value} perlu perhatian</small></span><Link href={a.href}>Periksa →</Link></div>)}</div>
-  </Panel>
-  <Panel title="Top 5 Outlet" detail={(source==="legacy"?"Historis KELAPA GO":"Operasional Baru")+" · "+periodLabel}>
-   <OutletRanking items={analytics.rankings}/>
-   <p className="form-hint" style={{padding:"0 20px 15px"}}><Link href={source==="legacy"?"/owner/legacy":"/owner/outlets"}>Lihat rincian outlet →</Link></p>
-  </Panel>
- </div>
  {go[0]?.unpriced_products>0?<div className="kg-insight"><strong>{go[0].unpriced_products} harga produk belum disetel</strong><p>Harga Rp0 memblokir order baru. <Link href="/products">Tetapkan harga →</Link></p></div>:null}
     <div className="kg-insight"><strong>Piutang historis {rupiah(go[0]?.unpaid||0)}</strong><p>Pembayaran tunai historis yang dicatat baru tetap berada di Kas Kecil; tidak ditambahkan lagi sebagai omzet periode ini.</p></div>
    </div>
@@ -131,5 +132,5 @@ export default async function OwnerHome({searchParams}:{searchParams:Promise<{fr
    <p><Link href="/owner/finance">Keuangan, HPP dan margin →</Link> · <Link href="/owner/settings">Pusat Pengaturan Owner →</Link></p>
   </div>
  </Panel>
- </>;
+ </div>;
 }
