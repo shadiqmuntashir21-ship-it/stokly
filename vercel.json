@@ -3,7 +3,8 @@
   "git": {
     "deploymentEnabled": {
       "qa-kelapa-go-20261125": false,
-      "qa-kelapa-go-supplier-payments": false
+      "qa-kelapa-go-supplier-payments": false,
+      "qa-kelapa-go-sales-receipts": false
     }
   }
 }

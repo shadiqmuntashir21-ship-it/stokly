@@ -19,7 +19,7 @@ export default async function OwnerHome({searchParams}:{searchParams:Promise<{fr
  const p=await searchParams;
  const period=p.all==="1"?parsePeriod():parsePeriod(p.from||currentMonth(),p.to);
  const source=p.view==="live"?"live" as const:"legacy" as const;
- const range=p.range==="7"?7:p.range==="30"?30:90;
+ const range=p.range==="1"?1:p.range==="7"?7:p.range==="30"?30:90;
  const custom=p.from&&p.to&&period.from&&period.to?{from:period.from,to:period.to}:undefined;
  const periodLabel=custom?custom.from+" s.d. "+custom.to:range+" hari terakhir";
  const preserve=custom?"from="+custom.from+"&to="+custom.to:"range="+range;
@@ -79,9 +79,10 @@ export default async function OwnerHome({searchParams}:{searchParams:Promise<{fr
  </div>
  <Panel title={"Tren Penjualan Bersih — "+(source==="legacy"?"Historis KELAPA GO":"Operasional Baru")} detail={"Sumber dipisahkan • "+periodLabel+" • sesuai tanggal pencatatan"}>
   <div className="kg-filter-chips" style={{padding:"16px 18px 0"}}>
-   {[7,30,90].map(n=><Link key={n} href={"/owner?view="+source+"&range="+n} aria-current={!custom&&range===n?"true":undefined}>{n} hari</Link>)}
+   {[1,7,30,90].map(n=><Link key={n} href={"/owner?view="+source+"&range="+n} aria-current={!custom&&range===n?"true":undefined}>{n===1?"Harian":n+" hari"}</Link>)}
    {custom&&<span style={{padding:"8px 12px",fontSize:12,background:"#165639",color:"#fff",borderRadius:10}}>Periode khusus: {custom.from} – {custom.to}</span>}
   </div>
+  <div className="quick-links"><a href={"/api/owner/sales-report?source="+source+"&from="+analytics.from+"&to="+analytics.to+"&format=xlsx"}>Unduh Excel Traffic Penjualan</a><a href={"/api/owner/sales-report?source="+source+"&from="+analytics.from+"&to="+analytics.to+"&format=pdf"}>Unduh PDF Traffic Penjualan</a></div>
   <TrendChart points={analytics.points} empty={source==="legacy"?"Tidak ada kuitansi historis pada rentang ini.":"Belum ada penjualan terkirim dalam operasional KELAPA GO yang baru."}/>
   <div className="kg-legend"><span><i style={{background:"#258658"}}/> Penjualan bersih setelah retur</span><span>Sumber: {source==="legacy"?"arsip kuitansi (sebagian perlu audit)":"invoice pengiriman baru"}</span></div>
  </Panel>
@@ -91,6 +92,7 @@ export default async function OwnerHome({searchParams}:{searchParams:Promise<{fr
   </Panel>
   <Panel title="Top 5 Outlet" detail={(source==="legacy"?"Data historis":"Operasional baru")+" · "+periodLabel}>
    <OutletRanking items={analytics.rankings}/>
+   <p className="kg-panel-foot"><a href={"/api/owner/sales-report?source="+source+"&from="+analytics.from+"&to="+analytics.to+"&format=xlsx"}>Unduh Top 5 & seluruh outlet (Excel) →</a></p>
    <p className="kg-panel-foot"><Link href={source==="legacy"?"/owner/legacy":"/owner/outlets"}>Lihat seluruh outlet →</Link></p>
   </Panel>
  </div>

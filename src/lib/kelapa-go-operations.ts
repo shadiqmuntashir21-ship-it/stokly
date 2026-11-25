@@ -1,6 +1,7 @@
 import {randomUUID} from "node:crypto";
 import {query,transaction} from "@/lib/db";
 import {BusinessError} from "@/lib/operations";
+import {reserveManualNumber} from "@/lib/manual-receipts";
 import {appendSupplierPayment,lockPurchaseCash,validateInitialPayment} from "@/lib/supplier-payments";
 
 const uuid=(s:string)=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
@@ -99,9 +100,7 @@ export async function registerVoidReceipt(input:{number:string;reason:string},ac
  if(!/^[0-9]{7}$/.test(number)||Number(number)<1||reason.length<5||reason.length>400)
   throw new BusinessError("Nomor dan alasan nota rusak tidak valid.");
  await transaction(async c=>{
-  const used=await c.query("SELECT id FROM customer_orders WHERE document_number=$1",[number]);
-  const shipped=await c.query("SELECT id FROM delivery_notes WHERE document_number=$1",[number]);
-  if(used.rowCount||shipped.rowCount)throw new BusinessError("Nomor sudah dipakai pada transaksi, tidak boleh ditandai rusak.");
+  await reserveManualNumber(c,number);
   await c.query("INSERT INTO receipt_register(document_number,status,note,actor_id) VALUES($1,'VOID',$2,$3)",[number,reason,actor]);
  });
 }

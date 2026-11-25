@@ -1,5 +1,6 @@
 import {query,transaction} from "@/lib/db";
 import {BusinessError} from "@/lib/operations";
+import {reserveManualNumber,replaceReservedNumber} from "@/lib/manual-receipts";
 
 const uuid=(x:string)=>/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(x);
 const positive=(n:number)=>Number.isSafeInteger(n)&&n>0&&n<=100000000;
@@ -15,9 +16,9 @@ export async function receiptNumberReady(){
  return !!rows[0]?.ready;
 }
 
-export async function listOrders(){
+export async function listOrders(search=""){
  return query<{id:string;document_number:string|null;outlet:string;ordered_on:string;status:string;items:number;total:string;shipped:number}>(
- "SELECT o.id::text,o.document_number,t.name AS outlet,o.ordered_on::text,o.status,COALESCE(SUM(i.quantity),0)::int AS items,COALESCE(SUM(i.quantity*i.unit_price),0)::text AS total,COALESCE((SELECT SUM(di.quantity)::int FROM delivery_notes dn JOIN delivery_note_items di ON di.delivery_id=dn.id WHERE dn.order_id=o.id),0)::int AS shipped FROM customer_orders o JOIN outlets t ON t.id=o.outlet_id JOIN customer_order_items i ON i.order_id=o.id GROUP BY o.id,t.name ORDER BY o.created_at DESC LIMIT 100"
+ "SELECT o.id::text,o.document_number,t.name AS outlet,o.ordered_on::text,o.status,COALESCE(SUM(i.quantity),0)::int AS items,COALESCE(SUM(i.quantity*i.unit_price),0)::text AS total,COALESCE((SELECT SUM(di.quantity)::int FROM delivery_notes dn JOIN delivery_note_items di ON di.delivery_id=dn.id WHERE dn.order_id=o.id),0)::int AS shipped FROM customer_orders o JOIN outlets t ON t.id=o.outlet_id JOIN customer_order_items i ON i.order_id=o.id WHERE ($1::text='' OR strpos(lower(COALESCE(o.document_number,'')),lower($1))>0 OR strpos(lower(t.name),lower($1))>0) GROUP BY o.id,t.name ORDER BY o.created_at DESC LIMIT 100",[search.trim().slice(0,100)]
  );
 }
 export async function listOrderLines(){
@@ -25,7 +26,7 @@ export async function listOrderLines(){
  "SELECT i.id::text,i.order_id::text,o.document_number AS number,t.name AS outlet,p.name AS product,i.quantity,i.unit_price::text,COALESCE((SELECT SUM(di.quantity)::int FROM delivery_note_items di WHERE di.order_item_id=i.id),0)::int AS shipped FROM customer_order_items i JOIN customer_orders o ON o.id=i.order_id JOIN outlets t ON t.id=o.outlet_id JOIN products p ON p.id=i.product_id WHERE o.status!='cancelled' AND i.quantity>COALESCE((SELECT SUM(di.quantity)::int FROM delivery_note_items di WHERE di.order_item_id=i.id),0) ORDER BY o.created_at DESC,p.name"
  );
 }
-export async function createOrder(data:{requestKey:string;outletId:string;items:OrderItem[];deliveryDate:string;note:string;priceReason:string},actor:string,allowOverride:boolean){
+export async function createOrder(data:{requestKey:string;outletId:string;items:OrderItem[];deliveryDate:string;note:string;priceReason:string;manualNumber?:string},actor:string,allowOverride:boolean){
  if(!uuid(data.requestKey)||!uuid(data.outletId)||!Array.isArray(data.items)||data.items.length<1||data.items.length>30||
  data.items.some(i=>!uuid(i.productId)||!positive(i.quantity)||(i.unitPrice!==null&&!validPrice(i.unitPrice)))||
  new Set(data.items.map(i=>i.productId)).size!==data.items.length||(data.deliveryDate&&!validDate(data.deliveryDate)))
@@ -46,10 +47,11 @@ export async function createOrder(data:{requestKey:string;outletId:string;items:
    if(changed&&data.priceReason.trim().length<5)throw new BusinessError("Tulis alasan perubahan harga transaksi (minimal 5 karakter).");
    return {...i,price,master,changed};
   });
-  const receiptNumber=(await c.query<{number:string|null}>("SELECT allocate_stokly_receipt_number() AS number")).rows[0]?.number;
+  if(data.manualNumber&&!allowOverride)throw new BusinessError("Nomor manual hanya untuk Owner/Admin.");
+  const receiptNumber=data.manualNumber?await reserveManualNumber(c,data.manualNumber):(await c.query<{number:string|null}>("SELECT allocate_stokly_receipt_number() AS number")).rows[0]?.number;
   if(!receiptNumber)throw new BusinessError("Nomor nota belum aktif atau habis. Hubungi Owner.");
   const order=await c.query<{id:string;document_number:string|null}>("INSERT INTO customer_orders(request_key,outlet_id,desired_delivery,note,created_by,receipt_number_pending,ordered_on,document_number) VALUES($1,$2,$3,$4,$5,false,(now() AT TIME ZONE 'Asia/Makassar')::date,$6) RETURNING id::text,document_number",[data.requestKey,data.outletId,data.deliveryDate||null,data.note.trim().slice(0,400),actor,receiptNumber]);
-  await c.query("INSERT INTO receipt_register(document_number,status,order_id,actor_id,note) VALUES($1,'RESERVED',$2,$3,'Nomor nota terbit saat submit order')",[receiptNumber,order.rows[0].id,actor]);
+  await c.query("INSERT INTO receipt_register(document_number,status,order_id,actor_id,note) VALUES($1,'RESERVED',$2,$3,$4)",[receiptNumber,order.rows[0].id,actor,data.manualNumber?"Nomor fisik manual saat submit order":"Nomor nota terbit saat submit order"]);
   for(const item of priced){
    const added=await c.query<{id:string}>("INSERT INTO customer_order_items(order_id,product_id,quantity,unit_price) VALUES($1,$2,$3,$4) RETURNING id::text",[order.rows[0].id,item.productId,item.quantity,item.price]);
    if(item.changed)await c.query("INSERT INTO order_price_overrides(order_item_id,standard_price,applied_price,reason,created_by) VALUES($1,$2,$3,$4,$5)",[added.rows[0].id,item.master,item.price,data.priceReason.trim().slice(0,400),actor]);
@@ -183,14 +185,14 @@ export async function getOrderDraft(id:string):Promise<OrderDraft|null>{
   "SELECT i.id::text,i.product_id::text,p.name,i.quantity,i.unit_price::text,COALESCE((SELECT SUM(x.quantity)::int FROM delivery_note_items x WHERE x.order_item_id=i.id),0)::int AS shipped FROM customer_order_items i JOIN products p ON p.id=i.product_id WHERE i.order_id=$1 ORDER BY p.name",[id]);
  return {...rows[0],items};
 }
-export async function updateOrderDraft(data:{id:string;items:{id:string;quantity:number;unitPrice?:number}[];outletId?:string;date:string;note:string;reason:string},actor:string){
+export async function updateOrderDraft(data:{id:string;items:{id:string;quantity:number;unitPrice?:number;productId?:string}[];outletId?:string;manualNumber?:string;date:string;note:string;reason:string},actor:string){
  if(!uuid(data.id)||!Array.isArray(data.items)||data.items.length<1||data.items.length>50||
- data.items.some(i=>!uuid(i.id)||!positive(i.quantity)||(i.unitPrice!==undefined&&(!validPrice(i.unitPrice)||i.unitPrice<=0)))||(data.outletId!==undefined&&!uuid(data.outletId))||
+ data.items.some(i=>!uuid(i.id)||!positive(i.quantity)||(i.productId!==undefined&&!uuid(i.productId))||(i.unitPrice!==undefined&&(!validPrice(i.unitPrice)||i.unitPrice<=0)))||(data.outletId!==undefined&&!uuid(data.outletId))||
  new Set(data.items.map(i=>i.id)).size!==data.items.length||
  (data.date!==""&&!validDate(data.date))||data.reason.trim().length<5)
  throw new BusinessError("Data perubahan order atau alasan tidak valid.");
  return transaction(async c=>{
-  const order=await c.query<{status:string;note:string;outlet_id:string;desired_delivery:string|null}>("SELECT status,note,outlet_id::text,desired_delivery::text FROM customer_orders WHERE id=$1 FOR UPDATE",[data.id]);
+  const order=await c.query<{status:string;note:string;outlet_id:string;desired_delivery:string|null;document_number:string|null}>("SELECT status,note,outlet_id::text,desired_delivery::text,document_number FROM customer_orders WHERE id=$1 FOR UPDATE",[data.id]);
   if(!order.rows[0]||order.rows[0].status!=="confirmed")throw new BusinessError("Hanya order belum dikirim yang dapat diedit.");
   const d=await c.query("SELECT id FROM delivery_notes WHERE order_id=$1 LIMIT 1",[data.id]);
   if(d.rowCount)throw new BusinessError("Order yang sudah dikirim harus memakai transaksi koreksi, bukan mengubah order.");
@@ -201,9 +203,21 @@ export async function updateOrderDraft(data:{id:string;items:{id:string;quantity
   const outletId=data.outletId||order.rows[0].outlet_id;
   if(outletId!==order.rows[0].outlet_id&&!(await c.query("SELECT id FROM outlets WHERE id=$1 AND active=true",[outletId])).rowCount)throw new BusinessError("Outlet tidak aktif.");
   await c.query("UPDATE customer_orders SET desired_delivery=$2,note=$3,outlet_id=$4 WHERE id=$1",[data.id,data.date||null,data.note.trim().slice(0,400),outletId]);
-  for(const item of data.items){const old=rows.rows.find(r=>r.id===item.id)!;const price=item.unitPrice??Number(old.unit_price);await c.query("UPDATE customer_order_items SET quantity=$2,unit_price=$3 WHERE id=$1",[item.id,item.quantity,price]);if(cents(price)!==cents(Number(old.unit_price))){const master=(await c.query<{price:string}>("SELECT price::text FROM products WHERE id=$1",[old.product_id])).rows[0];await c.query("INSERT INTO order_price_overrides(order_item_id,standard_price,applied_price,reason,created_by) VALUES($1,$2,$3,$4,$5) ON CONFLICT(order_item_id) DO UPDATE SET applied_price=EXCLUDED.applied_price,reason=EXCLUDED.reason,created_by=EXCLUDED.created_by,created_at=now()",[item.id,master.price,price,data.reason.trim().slice(0,400),actor]);}}
+  const targetProducts=data.items.map(i=>i.productId||rows.rows.find(x=>x.id===i.id)!.product_id);
+  if(new Set(targetProducts).size!==targetProducts.length)throw new BusinessError("Produk tidak boleh sama pada dua baris.");
+  // Direct product replacement is safe; swaps require separate edits to avoid transient unique conflicts.
+  if(data.items.some(i=>i.productId&&rows.rows.some(x=>x.id!==i.id&&x.product_id===i.productId)))throw new BusinessError("Produk pengganti masih ada di baris lain. Ubah ke produk yang belum dipilih.");
+  for(const item of data.items){
+   const old=rows.rows.find(r=>r.id===item.id)!;
+   const productId=item.productId||old.product_id,price=item.unitPrice??Number(old.unit_price);
+   const product=(await c.query<{price:string;active:boolean}>("SELECT price::text,active FROM products WHERE id=$1",[productId])).rows[0];
+   if(!product||(productId!==old.product_id&&!product.active))throw new BusinessError("Produk pengganti tidak aktif.");
+   await c.query("UPDATE customer_order_items SET quantity=$2,unit_price=$3,product_id=$4 WHERE id=$1",[item.id,item.quantity,price,productId]);
+   if(productId!==old.product_id||cents(price)!==cents(Number(old.unit_price)))await c.query("INSERT INTO order_price_overrides(order_item_id,standard_price,applied_price,reason,created_by) VALUES($1,$2,$3,$4,$5) ON CONFLICT(order_item_id) DO UPDATE SET standard_price=EXCLUDED.standard_price,applied_price=EXCLUDED.applied_price,reason=EXCLUDED.reason,created_by=EXCLUDED.created_by,created_at=now()",[item.id,product.price,price,data.reason.trim().slice(0,400),actor]);
+  }
+  const number=data.manualNumber?await replaceReservedNumber(c,data.id,order.rows[0].document_number,data.manualNumber,actor,data.reason):order.rows[0].document_number;
   await c.query("INSERT INTO order_audit_events(order_id,actor_id,action,reason,previous_state,next_state) VALUES($1,$2,'edited',$3,$4::jsonb,$5::jsonb)",
-   [data.id,actor,data.reason.trim().slice(0,400),JSON.stringify(before),JSON.stringify({date:data.date,note:data.note,outletId,items:data.items})]);
+   [data.id,actor,data.reason.trim().slice(0,400),JSON.stringify(before),JSON.stringify({date:data.date,note:data.note,outletId,document_number:number,items:data.items})]);
   await c.query("INSERT INTO activity_logs(actor_id,action,entity,entity_id) VALUES($1,'order.edit','customer_order',$2)",[actor,data.id]);
  });
 }

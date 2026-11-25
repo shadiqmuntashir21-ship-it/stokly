@@ -1,5 +1,6 @@
 import {query,transaction} from "@/lib/db";
 import {BusinessError} from "@/lib/operations";
+import {reserveManualNumber} from "@/lib/manual-receipts";
 
 const isUuid=(v:string)=>/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(v);
 export type LegacyReceipt={id:string;outlet:string;ordered_on:string;status:string;deliveries:number;items:number};
@@ -26,12 +27,7 @@ export async function reconcileLegacyReceipt(input:{orderId:string;mode:"physica
    "SELECT id::text,document_number FROM delivery_notes WHERE order_id=$1 ORDER BY created_at ASC FOR UPDATE",[input.orderId]);
   if(!shipped.rowCount)throw new BusinessError("Nomor diterbitkan saat pengiriman. Kirim order terlebih dahulu.");
   if(shipped.rowCount!==1)throw new BusinessError("Order memiliki beberapa pengiriman. Gunakan daftar Nota per Pengiriman.");
-  if(input.mode==="physical_existing"){
-   const matches=await c.query(
-    "SELECT document_number FROM receipt_register WHERE document_number=$1 UNION ALL SELECT document_number FROM legacy_receipts WHERE document_number=$1 UNION ALL SELECT document_number FROM legacy_void_receipts WHERE document_number=$1 LIMIT 1",
-    [input.physicalNumber]);
-   if(matches.rowCount)throw new BusinessError("Nomor fisik sudah digunakan atau rusak dan tidak boleh diterbitkan kembali.");
-  }
+  if(input.mode==="physical_existing")await reserveManualNumber(c,input.physicalNumber);
   if(r.rows[0].status==="cancelled"&&input.mode==="new_sequence")
    throw new BusinessError("Order yang sudah dibatalkan tidak dapat memperoleh nomor baru.");
   const number=input.mode==="new_sequence"?

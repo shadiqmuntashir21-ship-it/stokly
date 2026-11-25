@@ -11,8 +11,9 @@ export async function createOrderAction(f:FormData){
  let parsed:unknown;
  try{parsed=JSON.parse(s(f,"items"));}catch{redirect("/orders?error=Daftar%20item%20tidak%20valid");}
  if(!Array.isArray(parsed))redirect("/orders?error=Daftar%20item%20tidak%20valid");
+ if(s(f,"numberMode")==="manual"&&!s(f,"manualNumber").trim())redirect("/orders?error=Nomor%20fisik%20wajib");
  const items=parsed.map(x=>({productId:String(x.productId||""),quantity:Number(x.quantity),unitPrice:x.unitPrice===null||x.unitPrice===undefined?null:Number(x.unitPrice)}));
- const orderId=await safeWrite("/orders",()=>createOrder({requestKey:s(f,"requestKey"),outletId:s(f,"outletId"),items,deliveryDate:s(f,"deliveryDate"),note:s(f,"note"),priceReason:s(f,"priceReason")},actor.id,actor.role!=="marketing"));
+ const orderId=await safeWrite("/orders",()=>createOrder({requestKey:s(f,"requestKey"),outletId:s(f,"outletId"),items,deliveryDate:s(f,"deliveryDate"),note:s(f,"note"),priceReason:s(f,"priceReason"),manualNumber:s(f,"numberMode")==="manual"?s(f,"manualNumber"):undefined},actor.id,actor.role!=="marketing"));
  const {query}=await import("@/lib/db");
  const row=await query<{document_number:string|null}>("SELECT document_number FROM customer_orders WHERE id=$1",[orderId]);
  revalidatePath("/orders");revalidatePath("/invoices");
@@ -42,14 +43,14 @@ export async function editDraftAction(f:FormData){
  const actor=await requireActor(["owner","admin"]);
  const id=s(f,"orderId");
  const ids=s(f,"itemIds").split(",").filter(Boolean);
- const items=ids.map(id=>({id,quantity:Number(f.get("qty_"+id)),unitPrice:s(f,"price_"+id)===""?undefined:Number(f.get("price_"+id))}));
- await safeWrite("/orders/"+id,()=>updateOrderDraft({id,items,outletId:s(f,"outletId")||undefined,date:s(f,"deliveryDate"),note:s(f,"note"),reason:s(f,"reason")},actor.id));
- revalidatePath("/orders");revalidatePath("/orders/"+id);redirect("/orders/"+id+"?success=1");
+ const items=ids.map(id=>({id,quantity:Number(f.get("qty_"+id)),unitPrice:s(f,"price_"+id)===""?undefined:Number(f.get("price_"+id)),productId:s(f,"product_"+id)||undefined}));
+ await safeWrite("/orders/"+id,()=>updateOrderDraft({id,items,outletId:s(f,"outletId")||undefined,manualNumber:s(f,"manualNumber")||undefined,date:s(f,"deliveryDate"),note:s(f,"note"),reason:s(f,"reason")},actor.id));
+ for(const p of ["/orders","/orders/"+id,"/invoices","/owner","/owner/archive"])revalidatePath(p);redirect("/orders/"+id+"?success=1");
 }
 export async function cancelDraftAction(f:FormData){
  const actor=await requireActor(["owner","admin"]);
  const id=s(f,"orderId");
  if(s(f,"confirm")!=="on"&&s(f,"confirm")!=="1")redirect("/orders/"+id+"?error=Konfirmasi%20pembatalan%20wajib");
  await safeWrite("/orders/"+id,()=>cancelOrderDraft(id,s(f,"reason"),actor.id));
- revalidatePath("/orders");revalidatePath("/orders/"+id);redirect("/orders/"+id+"?success=1");
+ for(const p of ["/orders","/orders/"+id,"/invoices","/owner","/owner/archive"])revalidatePath(p);redirect(s(f,"returnToList")==="1"?"/orders?success=1":"/orders/"+id+"?success=1");
 }

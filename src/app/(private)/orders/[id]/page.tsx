@@ -14,6 +14,7 @@ export default async function OrderDetail({params,searchParams}:{params:Promise<
  if(!order)return <p>Order tidak ditemukan. <Link href="/orders">Kembali ke daftar</Link></p>;
  const canEdit=order.status==="confirmed"&&order.items.every(x=>x.shipped===0)&&actor.role!=="marketing";
  const outlets=canEdit?await query<{id:string;name:string}>("SELECT id::text,name FROM outlets WHERE active=true OR id=$1 ORDER BY name",[order.outlet_id]):[];
+ const products=canEdit?await query<{id:string;name:string;active:boolean}>("SELECT id::text,name,active FROM products WHERE active OR id=ANY($1::uuid[]) ORDER BY name",[order.items.map(x=>x.product_id)]):[];
  const ledger=invoice[0];
  const due=ledger?invoiceBalance(ledger.gross,ledger.credit,ledger.paid).due:0;
  return <><PageHead eyebrow="TRANSAKSI / DETAIL" title={"Order "+(order.document_number||"Belum bernomor")} description={order.outlet+" · "+order.status.replaceAll("_"," ")}/><Notice success={flags.success} error={flags.error}/>
@@ -33,17 +34,18 @@ export default async function OrderDetail({params,searchParams}:{params:Promise<
   <p>Nilai terkirim: {rupiah(ledger.gross)}</p><p>Retur: {rupiah(ledger.credit)}</p>
   <p>Terbayar: {rupiah(ledger.paid)}</p><p>Sisa piutang: {rupiah(due)}</p>
   </div></Panel>}
- {canEdit&&<Panel title="Edit order sebelum dikirim" detail="Ubah pelanggan, jumlah, harga dan jadwal; alasan wajib">
+ {canEdit&&<div id="edit-order"><Panel title="Edit order sebelum dikirim" detail="Ubah pelanggan, produk, jumlah, harga, nomor fisik dan jadwal; alasan wajib">
  <form className="form-grid" action={editDraftAction}>
   <input type="hidden" name="orderId" value={id}/>
   <input type="hidden" name="itemIds" value={order.items.map(x=>x.id).join(",")}/>
   <label>Pelanggan<select name="outletId" defaultValue={order.outlet_id}>{outlets.map(o=><option key={o.id} value={o.id}>{o.name}</option>)}</select></label>
-  {order.items.map(x=><div className="form-grid" key={x.id}><label>{x.name} — jumlah<input type="number" min="1" step="1" name={"qty_"+x.id} defaultValue={x.quantity} required/></label><label>Harga/unit<input type="number" min="0.01" step=".01" name={"price_"+x.id} defaultValue={x.unit_price} required/></label></div>)}
+  {order.items.map(x=><div className="form-grid" key={x.id}><label>Produk<select name={"product_"+x.id} defaultValue={x.product_id}>{products.filter(p=>p.active||p.id===x.product_id).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label><label>{x.name} — jumlah<input type="number" min="1" step="1" name={"qty_"+x.id} defaultValue={x.quantity} required/></label><label>Harga/unit<input type="number" min="0.01" step=".01" name={"price_"+x.id} defaultValue={x.unit_price} required/></label></div>)}
+  <label>Nomor kwitansi fisik<input name="manualNumber" inputMode="numeric" pattern="[0-9]{1,7}" maxLength={7} defaultValue={order.document_number||""}/></label><p className="form-hint">Jika nomor diubah, nomor lama ditandai batal dan tidak dapat digunakan kembali. Kosongkan untuk mempertahankan nomor lama.</p>
   <label>Tanggal kirim<input name="deliveryDate" type="date" defaultValue={order.desired_delivery||""}/></label>
   <label className="wide">Catatan<input name="note" maxLength={400} defaultValue={order.note}/></label>
   <label className="wide">Alasan perubahan<input name="reason" minLength={5} required maxLength={400} placeholder="Misalnya outlet mengubah jumlah"/></label>
   <SubmitButton className="primary-button">Simpan Perubahan</SubmitButton>
- </form></Panel>}
+ </form></Panel></div>}
  {canEdit&&<Panel title="Batalkan order" detail="Nomor kwitansi yang dibatalkan tidak dipakai ulang">
   <form action={cancelDraftAction} className="form-grid"><input type="hidden" name="orderId" value={id}/>
    <label className="wide">Alasan pembatalan<input name="reason" required minLength={5} maxLength={400}/></label>

@@ -1,6 +1,7 @@
 "use client";
 import {SubmitButton} from "@/components/submit-button";
 import {useState} from "react";
+import {normalizeReceiptNumber} from "@/lib/receipt-number-format";
 import {SearchableChoice} from "@/components/searchable-choice";
 import {rupiahDigits,groupedRupiah,nominalLabel} from "@/lib/rupiah-input";
 import {createOrderAction} from "@/app/(private)/order-actions";
@@ -13,17 +14,20 @@ export function OrderComposer({products,outlets,requestKey,canOverride,numberRea
  const [outlet,setOutlet]=useState(initialOutlet);
  const outletChoices=outlets.filter(x=>x.active).map(x=>({id:x.id,label:x.name}));
  const [reason,setReason]=useState("");
+ const [numberMode,setNumberMode]=useState("auto");
+ const [manualNumber,setManualNumber]=useState("");
  const master=(id:string)=>Number(products.find(p=>p.id===id)?.price??0);
  const changed=items.some(x=>x.productId&&x.unitPrice!==null&&Math.round(x.unitPrice*100)!==Math.round(master(x.productId)*100));
- const valid=!!outlet&&items.length>0&&items.every(x=>x.productId&&Number.isSafeInteger(x.quantity)&&x.quantity>0&&Number.isFinite(x.unitPrice??master(x.productId))&&(x.unitPrice??master(x.productId))>0)&&new Set(items.map(x=>x.productId)).size===items.length&&(!changed||canOverride&&reason.trim().length>=5)&&numberReady;
+ const valid=!!outlet&&items.length>0&&items.every(x=>x.productId&&Number.isSafeInteger(x.quantity)&&x.quantity>0&&Number.isFinite(x.unitPrice??master(x.productId))&&(x.unitPrice??master(x.productId))>0)&&new Set(items.map(x=>x.productId)).size===items.length&&(!changed||canOverride&&reason.trim().length>=5)&&(numberMode==="manual"?canOverride&&normalizeReceiptNumber(manualNumber)!==null:numberReady);
  const total=items.reduce((s,x)=>s+(x.unitPrice??master(x.productId))*x.quantity,0);
  const update=(i:number,patch:Partial<Item>)=>setItems(old=>old.map((item,j)=>j===i?{...item,...patch}:item));
  return <form action={createOrderAction} className="order-compose">
  <input type="hidden" name="requestKey" value={requestKey}/>
  <input type="hidden" name="items" value={JSON.stringify(items)}/>
  <input type="hidden" name="outletId" value={outlet}/>
- {!numberReady&&<p className="form-hint" role="alert">Nomor nota belum aktif. Simpan Order akan ditolak sampai Owner mengaktifkannya; tidak ada order tanpa nomor.</p>}
+ {!numberReady&&numberMode==="auto"&&<p className="form-hint" role="alert">Nomor otomatis belum aktif. Owner/Admin dapat memilih nomor fisik manual; tidak ada order tanpa nomor.</p>}
  <div className="form-grid">
+  {canOverride&&<><label>Metode nomor kwitansi<select name="numberMode" value={numberMode} onChange={e=>setNumberMode(e.target.value)}><option value="auto">Otomatis dari sistem</option><option value="manual">Manual sesuai nota fisik</option></select></label>{numberMode==="manual"&&<label>Nomor nota fisik<input name="manualNumber" inputMode="numeric" pattern="[0-9]{1,7}" maxLength={7} value={manualNumber} onChange={e=>setManualNumber(e.target.value)} required placeholder="Contoh: 0001635"/><span className="form-hint">Nomor tersimpan: {normalizeReceiptNumber(manualNumber)||"—"} · dicek saat simpan.</span></label>}</>}
   <SearchableChoice label="Outlet" placeholder="Ketik nama outlet, misalnya SIDRAP" choices={outletChoices} value={outlet} onChange={setOutlet}/>
   <label>Jadwal pengiriman<input name="deliveryDate" type="date"/></label>
   <label className="wide">Catatan order<input name="note" maxLength={400} placeholder="Instruksi outlet"/></label>

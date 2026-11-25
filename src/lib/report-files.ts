@@ -26,15 +26,17 @@ export function makeWorkbook(sheets:Sheet[]){
  return makeZip(entries);
 }
 // A simple paginated, text-only PDF. ASCII-compatible output avoids missing font glyphs.
-export function makeReportPdf(title:string,lines:string[]){
+export function makeReportPdf(title:string,lines:string[],chart?:{label:string;value:number}[]){
  const safe=(s:string)=>s.normalize("NFKD").replace(/[^\x20-\x7e]/g,"?").replace(/([\\()])/g,"\\$1");
  const wrapped=lines.flatMap(line=>{const out:string[]=[];let rest=line;while(rest.length>88){let p=rest.lastIndexOf(" ",88);if(p<10)p=88;out.push(rest.slice(0,p));rest=rest.slice(p).trimStart();}return [...out,rest];});
- const pages:string[][]=[];for(let i=0;i<Math.max(1,wrapped.length);i+=44)pages.push(wrapped.slice(i,i+44));
+ const pages:string[][]=[];let offset=0;if(chart?.length){pages.push(wrapped.slice(0,29));offset=29;}for(let i=offset;i<Math.max(offset===0?1:0,wrapped.length);i+=44)pages.push(wrapped.slice(i,i+44));
  const objects:string[]=["<< /Type /Catalog /Pages 2 0 R >>","", "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"];
  const pageIds:number[]=[];
  for(const [i,page] of pages.entries()){
   const pageId=objects.length+1,streamId=pageId+1;pageIds.push(pageId);
-  const stream="BT /F1 16 Tf 38 800 Td ("+safe(title)+") Tj /F1 10 Tf 0 -22 Td ("+safe("Halaman "+(i+1)+" / "+pages.length)+") Tj "+page.map(x=>"0 -16 Td ("+safe(x)+") Tj").join("\n")+"\nET";
+  let stream="BT /F1 16 Tf 38 800 Td ("+safe(title)+") Tj /F1 10 Tf 0 -22 Td ("+safe("Halaman "+(i+1)+" / "+pages.length)+") Tj ";
+  if(i===0&&chart?.length){const values=chart.slice(0,31),min=Math.min(0,...values.map(x=>x.value)),max=Math.max(0,...values.map(x=>x.value)),span=max-min||1,baseline=675+(0-min)/span*95,step=500/values.length;stream+="ET\n0.82 0.86 0.83 RG 42 "+baseline+" m 542 "+baseline+" l S\n";for(const [j,x] of values.entries()){const y=675+(x.value-min)/span*95;stream+="0.15 0.48 0.31 rg "+(42+j*step+1).toFixed(2)+" "+Math.min(y,baseline).toFixed(2)+" "+Math.max(1,step-2).toFixed(2)+" "+Math.abs(y-baseline).toFixed(2)+" re f\n";if(j===0||j===values.length-1||j%Math.ceil(values.length/5)===0)stream+="0.1 0.1 0.1 rg BT /F1 7 Tf "+(42+j*step).toFixed(2)+" 660 Td ("+safe(x.label)+") Tj ET\n";}stream+="0.1 0.1 0.1 rg BT /F1 8 Tf 42 645 Td ("+safe("Grafik penjualan bersih | rentang Rp"+min.toLocaleString("id-ID")+" - Rp"+max.toLocaleString("id-ID"))+") Tj ET\nBT /F1 10 Tf 38 620 Td ";}
+  stream+=page.map(x=>"0 -16 Td ("+safe(x)+") Tj").join("\n")+"\nET";
   objects.push("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents "+streamId+" 0 R >>","<< /Length "+Buffer.byteLength(stream)+" >>\nstream\n"+stream+"\nendstream");
  }
  objects[1]="<< /Type /Pages /Count "+pageIds.length+" /Kids ["+pageIds.map(id=>id+" 0 R").join(" ")+"] >>";
