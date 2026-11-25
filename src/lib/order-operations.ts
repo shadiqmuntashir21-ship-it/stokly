@@ -183,25 +183,27 @@ export async function getOrderDraft(id:string):Promise<OrderDraft|null>{
   "SELECT i.id::text,i.product_id::text,p.name,i.quantity,i.unit_price::text,COALESCE((SELECT SUM(x.quantity)::int FROM delivery_note_items x WHERE x.order_item_id=i.id),0)::int AS shipped FROM customer_order_items i JOIN products p ON p.id=i.product_id WHERE i.order_id=$1 ORDER BY p.name",[id]);
  return {...rows[0],items};
 }
-export async function updateOrderDraft(data:{id:string;items:{id:string;quantity:number}[];date:string;note:string;reason:string},actor:string){
+export async function updateOrderDraft(data:{id:string;items:{id:string;quantity:number;unitPrice?:number}[];outletId?:string;date:string;note:string;reason:string},actor:string){
  if(!uuid(data.id)||!Array.isArray(data.items)||data.items.length<1||data.items.length>50||
- data.items.some(i=>!uuid(i.id)||!positive(i.quantity))||
+ data.items.some(i=>!uuid(i.id)||!positive(i.quantity)||(i.unitPrice!==undefined&&(!validPrice(i.unitPrice)||i.unitPrice<=0)))||(data.outletId!==undefined&&!uuid(data.outletId))||
  new Set(data.items.map(i=>i.id)).size!==data.items.length||
  (data.date!==""&&!validDate(data.date))||data.reason.trim().length<5)
  throw new BusinessError("Data perubahan order atau alasan tidak valid.");
  return transaction(async c=>{
-  const order=await c.query<{status:string;note:string;desired_delivery:string|null}>("SELECT status,note,desired_delivery::text FROM customer_orders WHERE id=$1 FOR UPDATE",[data.id]);
+  const order=await c.query<{status:string;note:string;outlet_id:string;desired_delivery:string|null}>("SELECT status,note,outlet_id::text,desired_delivery::text FROM customer_orders WHERE id=$1 FOR UPDATE",[data.id]);
   if(!order.rows[0]||order.rows[0].status!=="confirmed")throw new BusinessError("Hanya order belum dikirim yang dapat diedit.");
   const d=await c.query("SELECT id FROM delivery_notes WHERE order_id=$1 LIMIT 1",[data.id]);
   if(d.rowCount)throw new BusinessError("Order yang sudah dikirim harus memakai transaksi koreksi, bukan mengubah order.");
-  const rows=await c.query<{id:string;quantity:number}>("SELECT id::text,quantity FROM customer_order_items WHERE order_id=$1 FOR UPDATE",[data.id]);
+  const rows=await c.query<{id:string;quantity:number;unit_price:string;product_id:string}>("SELECT id::text,quantity,unit_price::text,product_id::text FROM customer_order_items WHERE order_id=$1 FOR UPDATE",[data.id]);
   if(rows.rows.length!==data.items.length||data.items.some(i=>!rows.rows.some(x=>x.id===i.id)))
     throw new BusinessError("Daftar item sudah berubah. Muat ulang halaman.");
   const before={order:order.rows[0],items:rows.rows};
-  await c.query("UPDATE customer_orders SET desired_delivery=$2,note=$3 WHERE id=$1",[data.id,data.date||null,data.note.trim().slice(0,400)]);
-  for(const item of data.items)await c.query("UPDATE customer_order_items SET quantity=$2 WHERE id=$1",[item.id,item.quantity]);
+  const outletId=data.outletId||order.rows[0].outlet_id;
+  if(outletId!==order.rows[0].outlet_id&&!(await c.query("SELECT id FROM outlets WHERE id=$1 AND active=true",[outletId])).rowCount)throw new BusinessError("Outlet tidak aktif.");
+  await c.query("UPDATE customer_orders SET desired_delivery=$2,note=$3,outlet_id=$4 WHERE id=$1",[data.id,data.date||null,data.note.trim().slice(0,400),outletId]);
+  for(const item of data.items){const old=rows.rows.find(r=>r.id===item.id)!;const price=item.unitPrice??Number(old.unit_price);await c.query("UPDATE customer_order_items SET quantity=$2,unit_price=$3 WHERE id=$1",[item.id,item.quantity,price]);if(cents(price)!==cents(Number(old.unit_price))){const master=(await c.query<{price:string}>("SELECT price::text FROM products WHERE id=$1",[old.product_id])).rows[0];await c.query("INSERT INTO order_price_overrides(order_item_id,standard_price,applied_price,reason,created_by) VALUES($1,$2,$3,$4,$5) ON CONFLICT(order_item_id) DO UPDATE SET applied_price=EXCLUDED.applied_price,reason=EXCLUDED.reason,created_by=EXCLUDED.created_by,created_at=now()",[item.id,master.price,price,data.reason.trim().slice(0,400),actor]);}}
   await c.query("INSERT INTO order_audit_events(order_id,actor_id,action,reason,previous_state,next_state) VALUES($1,$2,'edited',$3,$4::jsonb,$5::jsonb)",
-   [data.id,actor,data.reason.trim().slice(0,400),JSON.stringify(before),JSON.stringify({date:data.date,note:data.note,items:data.items})]);
+   [data.id,actor,data.reason.trim().slice(0,400),JSON.stringify(before),JSON.stringify({date:data.date,note:data.note,outletId,items:data.items})]);
   await c.query("INSERT INTO activity_logs(actor_id,action,entity,entity_id) VALUES($1,'order.edit','customer_order',$2)",[actor,data.id]);
  });
 }
@@ -213,6 +215,7 @@ export async function cancelOrderDraft(id:string,reason:string,actor:string){
   const deliveries=await c.query("SELECT id FROM delivery_notes WHERE order_id=$1 LIMIT 1",[id]);
   if(deliveries.rowCount)throw new BusinessError("Order dengan pengiriman tidak boleh dibatalkan begitu saja.");
   await c.query("UPDATE customer_orders SET status='cancelled' WHERE id=$1",[id]);
+  await c.query("UPDATE receipt_register SET status='VOID',note=$2,actor_id=$3 WHERE order_id=$1 AND status='RESERVED'",[id,reason.trim().slice(0,400),actor]);
   await c.query("INSERT INTO order_audit_events(order_id,actor_id,action,reason,previous_state,next_state) VALUES($1,$2,'cancelled',$3,$4::jsonb,$5::jsonb)",
    [id,actor,reason.trim().slice(0,400),JSON.stringify(row.rows[0]),JSON.stringify({status:"cancelled"})]);
   await c.query("INSERT INTO activity_logs(actor_id,action,entity,entity_id) VALUES($1,'order.cancel','customer_order',$2)",[actor,id]);

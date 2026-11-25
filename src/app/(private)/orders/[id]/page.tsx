@@ -4,6 +4,7 @@ import {getOrderDraft,listOrderAudit,listInvoices} from "@/lib/order-operations"
 import {PageHead,Panel,Notice,rupiah} from "@/components/ui";
 import {SubmitButton} from "@/components/submit-button";
 import {invoiceBalance} from "@/lib/business-math";
+import {query} from "@/lib/db";
 import {editDraftAction,cancelDraftAction} from "../../order-actions";
 export const dynamic="force-dynamic";
 export default async function OrderDetail({params,searchParams}:{params:Promise<{id:string}>;searchParams:Promise<{success?:string;error?:string}>}){
@@ -12,6 +13,7 @@ export default async function OrderDetail({params,searchParams}:{params:Promise<
  const [order,audit,invoice,flags]=await Promise.all([getOrderDraft(id),listOrderAudit(id),actor.role==="marketing"?Promise.resolve([]):listInvoices({orderId:id}),searchParams]);
  if(!order)return <p>Order tidak ditemukan. <Link href="/orders">Kembali ke daftar</Link></p>;
  const canEdit=order.status==="confirmed"&&order.items.every(x=>x.shipped===0)&&actor.role!=="marketing";
+ const outlets=canEdit?await query<{id:string;name:string}>("SELECT id::text,name FROM outlets WHERE active=true OR id=$1 ORDER BY name",[order.outlet_id]):[];
  const ledger=invoice[0];
  const due=ledger?invoiceBalance(ledger.gross,ledger.credit,ledger.paid).due:0;
  return <><PageHead eyebrow="TRANSAKSI / DETAIL" title={"Order "+(order.document_number||"Belum bernomor")} description={order.outlet+" · "+order.status.replaceAll("_"," ")}/><Notice success={flags.success} error={flags.error}/>
@@ -31,11 +33,12 @@ export default async function OrderDetail({params,searchParams}:{params:Promise<
   <p>Nilai terkirim: {rupiah(ledger.gross)}</p><p>Retur: {rupiah(ledger.credit)}</p>
   <p>Terbayar: {rupiah(ledger.paid)}</p><p>Sisa piutang: {rupiah(due)}</p>
   </div></Panel>}
- {canEdit&&<Panel title="Edit order sebelum dikirim" detail="Harga asli tetap; ubah jumlah dan jadwal, alasan wajib">
+ {canEdit&&<Panel title="Edit order sebelum dikirim" detail="Ubah pelanggan, jumlah, harga dan jadwal; alasan wajib">
  <form className="form-grid" action={editDraftAction}>
   <input type="hidden" name="orderId" value={id}/>
   <input type="hidden" name="itemIds" value={order.items.map(x=>x.id).join(",")}/>
-  {order.items.map(x=><label key={x.id}>{x.name} — jumlah<input type="number" min="1" step="1" name={"qty_"+x.id} defaultValue={x.quantity} required/></label>)}
+  <label>Pelanggan<select name="outletId" defaultValue={order.outlet_id}>{outlets.map(o=><option key={o.id} value={o.id}>{o.name}</option>)}</select></label>
+  {order.items.map(x=><div className="form-grid" key={x.id}><label>{x.name} — jumlah<input type="number" min="1" step="1" name={"qty_"+x.id} defaultValue={x.quantity} required/></label><label>Harga/unit<input type="number" min="0.01" step=".01" name={"price_"+x.id} defaultValue={x.unit_price} required/></label></div>)}
   <label>Tanggal kirim<input name="deliveryDate" type="date" defaultValue={order.desired_delivery||""}/></label>
   <label className="wide">Catatan<input name="note" maxLength={400} defaultValue={order.note}/></label>
   <label className="wide">Alasan perubahan<input name="reason" minLength={5} required maxLength={400} placeholder="Misalnya outlet mengubah jumlah"/></label>
@@ -44,11 +47,12 @@ export default async function OrderDetail({params,searchParams}:{params:Promise<
  {canEdit&&<Panel title="Batalkan order" detail="Nomor kwitansi yang dibatalkan tidak dipakai ulang">
   <form action={cancelDraftAction} className="form-grid"><input type="hidden" name="orderId" value={id}/>
    <label className="wide">Alasan pembatalan<input name="reason" required minLength={5} maxLength={400}/></label>
-   <SubmitButton className="primary-button">Batalkan Order Belum Dikirim</SubmitButton>
+   <label className="wide"><input type="checkbox" name="confirm" required/> Saya yakin membatalkan nota ini.</label><SubmitButton className="primary-button">Batalkan Order Belum Dikirim</SubmitButton>
   </form></Panel>}
+ {!canEdit&&actor.role!=="marketing"&&order.status!=="cancelled"&&<p className="form-hint">Nota yang sudah dikirim tidak dapat ditimpa. Gunakan retur atau komplain, rekonsiliasi pembayaran, dan nota pengganti sesuai kondisi barang.</p>}
  <Panel title="Riwayat perubahan">
-  {audit.length===0?<p className="form-hint">Belum ada perubahan atau pembatalan yang tercatat.</p>:<div className="table-wrap"><table><thead><tr><th>Waktu</th><th>Aksi</th><th>Alasan</th></tr></thead><tbody>
-   {audit.map((x,i)=><tr key={i}><td>{new Date(x.created_at).toLocaleString("id-ID",{timeZone:"Asia/Makassar"})}</td><td>{x.action}</td><td>{x.reason}</td></tr>)}
+  {audit.length===0?<p className="form-hint">Belum ada perubahan atau pembatalan yang tercatat.</p>:<div className="table-wrap"><table><thead><tr><th>Waktu</th><th>Aksi</th><th>Alasan</th><th>Petugas</th></tr></thead><tbody>
+   {audit.map((x,i)=><tr key={i}><td>{new Date(x.created_at).toLocaleString("id-ID",{timeZone:"Asia/Makassar"})}</td><td>{x.action}</td><td>{x.reason}</td><td>{x.actor_id}</td></tr>)}
   </tbody></table></div>}
  </Panel>
  </>;

@@ -42,13 +42,14 @@ export async function editDraftAction(f:FormData){
  const actor=await requireActor(["owner","admin"]);
  const id=s(f,"orderId");
  const ids=s(f,"itemIds").split(",").filter(Boolean);
- const items=ids.map(id=>({id,quantity:Number(f.get("qty_"+id))}));
- await safeWrite("/orders/"+id,()=>updateOrderDraft({id,items,date:s(f,"deliveryDate"),note:s(f,"note"),reason:s(f,"reason")},actor.id));
+ const items=ids.map(id=>({id,quantity:Number(f.get("qty_"+id)),unitPrice:s(f,"price_"+id)===""?undefined:Number(f.get("price_"+id))}));
+ await safeWrite("/orders/"+id,()=>updateOrderDraft({id,items,outletId:s(f,"outletId")||undefined,date:s(f,"deliveryDate"),note:s(f,"note"),reason:s(f,"reason")},actor.id));
  revalidatePath("/orders");revalidatePath("/orders/"+id);redirect("/orders/"+id+"?success=1");
 }
 export async function cancelDraftAction(f:FormData){
  const actor=await requireActor(["owner","admin"]);
  const id=s(f,"orderId");
+ if(s(f,"confirm")!=="on"&&s(f,"confirm")!=="1")redirect("/orders/"+id+"?error=Konfirmasi%20pembatalan%20wajib");
  await safeWrite("/orders/"+id,()=>cancelOrderDraft(id,s(f,"reason"),actor.id));
  revalidatePath("/orders");revalidatePath("/orders/"+id);redirect("/orders/"+id+"?success=1");
 }

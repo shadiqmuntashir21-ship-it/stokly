@@ -34,8 +34,8 @@ export async function recordCombinedPurchase(input:{requestKey:string;supplierId
     await c.query("INSERT INTO coconut_qc(request_key,batch_id,inspected_qty,passed_qty,rejected_qty,reject_reason,inspected_by) VALUES($1,$2,$3,$4,$5,$6,$7)",
       [randomUUID(),batch.rows[0].id,x.passed+x.rejected,x.passed,x.rejected,x.rejected>0?"Afkir saat pembelian/QC":"",actor]);
    }
-   await c.query("INSERT INTO supplier_prices(supplier_id,grade_id,unit,unit_price,note,created_by) VALUES($1,$2,'BUTIR',$3,$4,$5)",
-    [input.supplierId,x.gradeId,x.unitPrice,"Harga pembelian "+input.date,actor]);
+   await c.query("INSERT INTO supplier_prices(supplier_id,grade_id,unit,unit_price,note,created_by,source_receipt_id) VALUES($1,$2,'BUTIR',$3,$4,$5,$6)",
+    [input.supplierId,x.gradeId,x.unitPrice,"Harga pembelian "+input.date,actor,r.rows[0].id]);
   }
   await c.query("INSERT INTO activity_logs(actor_id,action,entity,entity_id) VALUES($1,'go.purchase.qc','purchase',$2)",
    [actor,group.rows[0].id]);
@@ -57,7 +57,7 @@ export async function recordDailyProduction(input:{requestKey:string;date:string
   if(prods.rowCount!==productIds.length||prods.rows.some(x=>x.category==="Afkir"||!["GO-MAKAN-FULL","GO-KELAPA-TAR","GO-SERUT"].includes(x.sku)))
    throw new BusinessError("Produk hasil produksi tidak valid atau termasuk kategori afkir.");
   const batches=await c.query<{id:string;available:number;accepted:number;total_value:string}>(
-   "SELECT b.id::text,(b.accepted_qty-b.consumed_qty)::int available,b.accepted_qty accepted,r.total_value::text total_value FROM coconut_batches b JOIN coconut_receipts r ON r.id=b.receipt_id WHERE b.accepted_qty>b.consumed_qty ORDER BY r.received_at,b.id FOR UPDATE OF b");
+   "SELECT b.id::text,(b.accepted_qty-b.consumed_qty)::int available,b.accepted_qty accepted,r.total_value::text total_value FROM coconut_batches b JOIN coconut_receipts r ON r.id=b.receipt_id WHERE b.voided_at IS NULL AND b.accepted_qty>b.consumed_qty ORDER BY r.received_at,b.id FOR UPDATE OF b");
   if(batches.rows.reduce((s,x)=>s+x.available,0)<input.used)
    throw new BusinessError("Bahan baku lolos QC tidak cukup. Catat pembelian dan QC terlebih dahulu.");
   const created=await c.query<{id:string}>(

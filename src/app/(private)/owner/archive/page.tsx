@@ -20,7 +20,7 @@ export default async function OwnerArchive({searchParams}:{searchParams:Promise<
     -COALESCE((SELECT SUM(p.amount) FROM delivery_payments p WHERE p.invoice_id=i.id),0))),0)::text
     FROM delivery_invoices i JOIN delivery_notes d ON d.id=i.delivery_id JOIN customer_orders o ON o.id=d.order_id WHERE o.ordered_on>=make_date($1,1,1) AND o.ordered_on<make_date($1+1,1,1) AND i.status='issued') AS outstanding,
    (SELECT COUNT(*)::int FROM delivery_refund_obligations r JOIN delivery_notes d ON d.id=r.delivery_id JOIN customer_orders o ON o.id=d.order_id WHERE o.ordered_on>=make_date($1,1,1) AND o.ordered_on<make_date($1+1,1,1) AND r.status='pending') AS pending_refunds,
-   (SELECT COUNT(*)::int FROM coconut_batches b JOIN coconut_receipts r ON r.id=b.receipt_id WHERE (r.received_at AT TIME ZONE 'Asia/Makassar')::date>=make_date($1,1,1) AND (r.received_at AT TIME ZONE 'Asia/Makassar')::date<make_date($1+1,1,1) AND (b.received_qty>b.accepted_qty+b.rejected_qty OR b.accepted_qty>b.consumed_qty)) AS active_batches`,[year])
+   (SELECT COUNT(*)::int FROM coconut_batches b JOIN coconut_receipts r ON r.id=b.receipt_id WHERE (r.received_at AT TIME ZONE 'Asia/Makassar')::date>=make_date($1,1,1) AND (r.received_at AT TIME ZONE 'Asia/Makassar')::date<make_date($1+1,1,1) AND b.voided_at IS NULL AND (b.received_qty>b.accepted_qty+b.rejected_qty OR b.accepted_qty>b.consumed_qty)) AS active_batches`,[year])
  ]);
  const b=blockers[0],blocked=b.open_orders>0||Number(b.outstanding)>0||b.pending_refunds>0||b.active_batches>0;
  const years=Array.from({length:Math.min(current-2023,12)},(_,i)=>current-i);

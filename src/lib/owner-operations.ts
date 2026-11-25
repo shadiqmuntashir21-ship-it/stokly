@@ -4,9 +4,9 @@ export async function ownerOperations():Promise<OwnerOperations>{
  const rows=await query<OwnerOperations>(`SELECT
  (SELECT COUNT(*)::int FROM customer_orders WHERE status='confirmed') AS open_orders,
  (SELECT COUNT(*)::int FROM customer_orders WHERE status='partially_delivered') AS partial_orders,
- (SELECT COUNT(*)::int FROM coconut_batches WHERE received_qty>accepted_qty+rejected_qty) AS uninspected_batches,
- (SELECT COALESCE(SUM(received_qty-accepted_qty-rejected_qty),0)::int FROM coconut_batches WHERE received_qty>accepted_qty+rejected_qty) AS uninspected_pcs,
- (SELECT COUNT(*)::int FROM coconut_batches WHERE accepted_qty>consumed_qty) AS ready_batches,
+ (SELECT COUNT(*)::int FROM coconut_batches WHERE voided_at IS NULL AND received_qty>accepted_qty+rejected_qty) AS uninspected_batches,
+ (SELECT COALESCE(SUM(received_qty-accepted_qty-rejected_qty),0)::int FROM coconut_batches WHERE voided_at IS NULL AND received_qty>accepted_qty+rejected_qty) AS uninspected_pcs,
+ (SELECT COUNT(*)::int FROM coconut_batches WHERE voided_at IS NULL AND accepted_qty>consumed_qty) AS ready_batches,
  (SELECT COUNT(*)::int FROM outlet_complaints WHERE status IN('open','investigating')) AS open_complaints,
  (SELECT COUNT(*)::int FROM inventory_balances b JOIN products p ON p.id=b.product_id WHERE p.active=true AND b.quantity<=p.min_stock) AS low_stock,
  (SELECT COUNT(*)::int FROM coconut_production pr WHERE

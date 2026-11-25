@@ -40,9 +40,9 @@ export async function addSupplierPrice(input:{supplierId:string;gradeId:string;p
  await query("INSERT INTO supplier_prices(supplier_id,grade_id,unit,unit_price,note,created_by) VALUES($1,$2,'BUTIR',$3,$4,$5)",
  [input.supplierId,input.gradeId,input.price,str(input.note,400),actor]);
 }
-export async function listCoconutReceipts(){
- return query<{id:string;batch_id:string;supplier:string;grade:string;quantity:number;price_per_butir:string;total_value:string;received_at:Date;accepted_qty:number;rejected_qty:number;consumed_qty:number}>(
- "SELECT r.id::text,b.id::text batch_id,s.name supplier,g.name grade,r.quantity,r.price_per_butir::text,r.total_value::text,r.received_at,b.accepted_qty,b.rejected_qty,b.consumed_qty FROM coconut_receipts r JOIN coconut_batches b ON b.receipt_id=r.id JOIN suppliers s ON s.id=r.supplier_id JOIN coconut_grades g ON g.id=r.grade_id ORDER BY r.received_at DESC LIMIT 80");
+export async function listCoconutReceipts(includeVoided=false){
+ return query<{id:string;batch_id:string;supplier_id:string;grade_id:string;supplier:string;grade:string;quantity:number;price_per_butir:string;total_value:string;received_at:Date;accepted_qty:number;rejected_qty:number;consumed_qty:number;voided_at:string|null;note:string}>(
+ "SELECT r.id::text,b.id::text batch_id,r.supplier_id::text,r.grade_id::text,s.name supplier,g.name grade,r.quantity,r.price_per_butir::text,r.total_value::text,r.received_at,b.accepted_qty,b.rejected_qty,b.consumed_qty,b.voided_at::text,r.note FROM coconut_receipts r JOIN coconut_batches b ON b.receipt_id=r.id JOIN suppliers s ON s.id=r.supplier_id JOIN coconut_grades g ON g.id=r.grade_id WHERE ($1::boolean OR b.voided_at IS NULL) ORDER BY r.received_at DESC LIMIT 80",[includeVoided]);
 }
 export async function receiveCoconut(data:{requestKey:string;supplierId:string;gradeId:string;quantity:number;price:number;note:string},actor:string){
  key(data.requestKey);
@@ -68,7 +68,7 @@ export async function recordQc(data:{requestKey:string;batchId:string;passed:num
    const old=await c.query<{id:string}>("SELECT id::text FROM coconut_qc WHERE request_key=$1 AND inspected_by=$2",[data.requestKey,actor]);
    if(old.rows[0])return old.rows[0].id;
    const batch=await c.query<{received_qty:number;accepted_qty:number;rejected_qty:number}>(
-    "SELECT received_qty,accepted_qty,rejected_qty FROM coconut_batches WHERE id=$1 FOR UPDATE",[data.batchId]);
+    "SELECT received_qty,accepted_qty,rejected_qty FROM coconut_batches WHERE id=$1 AND voided_at IS NULL FOR UPDATE",[data.batchId]);
    if(!batch.rows[0])throw new BusinessError("Batch tidak ditemukan.");
    const remaining=batch.rows[0].received_qty-batch.rows[0].accepted_qty-batch.rows[0].rejected_qty;
    if(data.passed+data.rejected>remaining)throw new BusinessError("Jumlah QC melebihi sisa batch yang belum diperiksa.");
@@ -95,7 +95,7 @@ export async function recordProduction(data:{requestKey:string;batchId:string;us
  return transaction(async c=>{
    const prior=await c.query<{id:string}>("SELECT id::text FROM coconut_production WHERE request_key=$1 AND created_by=$2",[data.requestKey,actor]);
    if(prior.rows[0])return prior.rows[0].id;
-   const batch=await c.query<{available:number}>("SELECT accepted_qty-consumed_qty available FROM coconut_batches WHERE id=$1 FOR UPDATE",[data.batchId]);
+   const batch=await c.query<{available:number}>("SELECT accepted_qty-consumed_qty available FROM coconut_batches WHERE id=$1 AND voided_at IS NULL FOR UPDATE",[data.batchId]);
    if(!batch.rows[0]||batch.rows[0].available<data.used)throw new BusinessError("Stok bahan baku lolos QC tidak mencukupi.");
    const productIds=data.outputs.map(o=>o.productId).sort();
    const products=await c.query<{id:string}>("SELECT id::text FROM products WHERE id=ANY($1::uuid[]) AND active=true ORDER BY id",[productIds]);

@@ -15,7 +15,7 @@ export default async function Production({searchParams}:{searchParams:Promise<{s
  const day=today();
  const [products,availability,runs,daily,p,stock,todayTotals]=await Promise.all([
   listProducts(),
-  query<{available:number}>("SELECT COALESCE(SUM(accepted_qty-consumed_qty),0)::int available FROM coconut_batches"),
+  query<{available:number}>("SELECT COALESCE(SUM(accepted_qty-consumed_qty),0)::int available FROM coconut_batches WHERE voided_at IS NULL"),
   listProduction(),
   query<Daily>("SELECT d.production_date::text date,d.coconut_used used,d.damaged_qty damaged,COALESCE((SELECT SUM(quantity)::int FROM coconut_production_day_outputs o WHERE o.production_id=d.id),0)::int produced,d.raw_material_cost::text material_cost FROM coconut_production_days d ORDER BY d.production_date DESC,d.created_at DESC LIMIT 80"),
   searchParams,finishedStock(day),
