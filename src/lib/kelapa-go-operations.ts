@@ -100,12 +100,38 @@ export async function registerVoidReceipt(input:{number:string;reason:string},ac
   await c.query("INSERT INTO receipt_register(document_number,status,note,actor_id) VALUES($1,'VOID',$2,$3)",[number,reason,actor]);
  });
 }
-export async function createCashEntry(input:{key:string;date:string;direction:"IN"|"OUT";wallet:"SMALL"|"LARGE";category:string;amount:number;description:string},actor:string){
+export async function createCashEntry(input:{key:string;date:string;direction:"IN"|"OUT";wallet:"SMALL"|"LARGE";category:string;amount:number;description:string;assetName?:string;assetQuantity?:number;assetVendor?:string},actor:string){
  if(!uuid(input.key)||!day(input.date)||!["IN","OUT"].includes(input.direction)||!["SMALL","LARGE"].includes(input.wallet)||!price(input.amount)||input.amount===0||
  input.category.trim().length<2||input.category.length>80||input.description.trim().length<5||input.description.length>400)
   throw new BusinessError("Catatan kas tidak valid.");
- await query("INSERT INTO cash_ledger_entries(request_key,entry_date,direction,category,description,amount,created_by) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(request_key) DO NOTHING",
-  [input.key,input.date,input.direction,input.wallet==="LARGE"?"KAS BESAR: "+input.category.trim().slice(0,65):input.category.trim().slice(0,80),input.description.trim().slice(0,400),input.amount,actor]);
+ const category=input.category.trim().toUpperCase();
+ if(!["OPERASIONAL","PEMBELIAN KELAPA","SETORAN","TAMBAHAN DANA","KASBON","BBM/TRANSPORT","LAINNYA","ASET"].includes(category))
+  throw new BusinessError("Kategori kas tidak valid.");
+ const bookedCategory=input.wallet==="LARGE"?"KAS BESAR: "+category:category;
+ if(category!=="ASET"){
+  await query("INSERT INTO cash_ledger_entries(request_key,entry_date,direction,category,description,amount,created_by) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(request_key) DO NOTHING",
+   [input.key,input.date,input.direction,bookedCategory,input.description.trim(),input.amount,actor]);
+  return;
+ }
+ const name=(input.assetName||"").trim(),quantity=input.assetQuantity||0,vendor=(input.assetVendor||"").trim();
+ if(input.direction!=="OUT"||name.length<2||name.length>150||!count(quantity)||quantity<1||vendor.length>200)
+  throw new BusinessError("Pembelian aset harus berupa kas keluar dengan nama dan jumlah aset yang valid.");
+ await transaction(async c=>{
+  await c.query("LOCK TABLE cash_ledger_entries IN SHARE ROW EXCLUSIVE MODE");
+  const prior=await c.query("SELECT id FROM cash_ledger_entries WHERE request_key=$1",[input.key]);
+  if(prior.rowCount)return;
+  const balance=await c.query<{balance:string}>(`SELECT (o.amount+COALESCE((SELECT SUM(CASE WHEN direction='IN' THEN amount ELSE -amount END) FROM cash_ledger_entries
+    WHERE (CASE WHEN category LIKE 'KAS BESAR:%' OR category='PENJUALAN TRANSFER' THEN 'LARGE' ELSE 'SMALL' END)=o.wallet),0))::text balance
+    FROM operational_cash_openings o WHERE wallet=$1`,[input.wallet]);
+  if(!balance.rows[0])throw new BusinessError("Owner harus menetapkan saldo awal sumber kas sebelum membeli aset.");
+  if(Number(balance.rows[0].balance)<input.amount)throw new BusinessError("Saldo sumber kas tidak mencukupi.");
+  const asset=await c.query<{id:string}>("INSERT INTO inventory_assets(name,quantity,purchase_date,vendor,unit_price,total_cost,note) VALUES($1,$2,$3,$4,round($5::numeric/$2::numeric,2),$5,$6) RETURNING id::text",
+   [name,quantity,input.date,vendor||null,input.amount,input.description.trim()]);
+  const id=asset.rows[0].id;
+  await c.query("INSERT INTO cash_ledger_entries(request_key,entry_date,direction,category,description,amount,reference_type,reference_id,created_by) VALUES($1,$2,'OUT',$3,$4,$5,'asset_purchase',$6,$7)",
+   [input.key,input.date,bookedCategory,name+" · "+input.description.trim().slice(0,240),input.amount,id,actor]);
+  await c.query("INSERT INTO activity_logs(actor_id,action,entity,entity_id) VALUES($1,'asset.purchase','inventory_asset',$2)",[actor,id]);
+ });
 }
 export async function addInventoryAsset(input:{name:string;quantity:number;note:string},actor:string){
  if(input.name.trim().length<2||input.name.length>150||!count(input.quantity)||input.note.length>400)

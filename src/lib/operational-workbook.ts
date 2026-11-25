@@ -1,0 +1,40 @@
+import {transaction} from "@/lib/db";
+import {validateArchiveYear} from "@/lib/annual-archive";
+import {makeWorkbook,type Cell,type Sheet} from "@/lib/report-files";
+const date=(c:string)=>c+">=make_date($1,1,1) AND "+c+"<make_date($1+1,1,1)";
+type Dataset={name:string;sql:string;headers:string[];master?:boolean};
+const datasets:Dataset[]=[
+ {name:"Nota Historis",headers:["Nomor Nota","Tanggal","Pelanggan","Grup","Jumlah","Bruto","Retur","Nilai Akhir","Status","Tanggal Bayar","Metode"],sql:"SELECT document_number,issued_on::text,outlet_name,group_name,quantity,gross::float8,return_value::float8,final_amount::float8,status,paid_on::text,payment_method FROM legacy_receipts WHERE "+date("issued_on")+" ORDER BY issued_on,document_number"},
+ {name:"Piutang Historis",headers:["Nomor Nota","Tanggal","Pelanggan","Nilai Akhir","Status","Sisa Terverifikasi","Perlu Rekonsiliasi"],sql:"SELECT document_number,issued_on::text,outlet_name,final_amount::float8,status,confirmed_due::float8,needs_reconciliation FROM v_go_unpaid_current WHERE "+date("issued_on")+" ORDER BY issued_on,document_number"},
+ {name:"Pembayaran Historis",headers:["Nomor Nota","Tanggal","Nominal","Metode","Catatan"],sql:"SELECT document_number,paid_on::text,amount::float8,payment_method,note FROM legacy_receipt_payments WHERE "+date("paid_on")+" ORDER BY paid_on,document_number"},
+ {name:"Kas Historis",headers:["Baris Sumber","Tanggal","Uraian","Kategori","Subkategori","Masuk","Keluar","Saldo Tertulis","Catatan"],sql:"SELECT source_row,entry_date::text,description,category,subcategory,money_in::float8,money_out::float8,recorded_balance::float8,notes FROM legacy_cash_entries WHERE ("+date("entry_date")+") OR entry_date IS NULL ORDER BY source_row"},
+ {name:"Kas Operasional",headers:["Tanggal","Sumber Dana","Arah","Kategori","Keterangan","Nominal","Referensi"],sql:"SELECT entry_date::text,CASE WHEN category LIKE 'KAS BESAR:%' OR category='PENJUALAN TRANSFER' THEN 'Kas Besar' ELSE 'Kas Kecil' END,direction,regexp_replace(category,'^KAS BESAR: ',''),description,amount::float8,reference_type FROM cash_ledger_entries WHERE "+date("entry_date")+" ORDER BY entry_date,created_at"},
+ {name:"Budget Operasional",headers:["Tanggal","Anggaran","Diubah oleh"],sql:"SELECT budget_date::text,amount::float8,updated_by FROM cash_daily_budgets WHERE "+date("budget_date")+" ORDER BY budget_date"},
+ {name:"Pembelian Kelapa",headers:["Tanggal","Supplier","Grade","Jumlah","Harga per Butir","Total","Lolos QC","Afkir","Terpakai","Catatan"],sql:"SELECT (r.received_at AT TIME ZONE 'Asia/Makassar')::date::text,s.name,g.name,r.quantity,r.price_per_butir::float8,r.total_value::float8,b.accepted_qty,b.rejected_qty,b.consumed_qty,r.note FROM coconut_receipts r LEFT JOIN suppliers s ON s.id=r.supplier_id LEFT JOIN coconut_grades g ON g.id=r.grade_id LEFT JOIN coconut_batches b ON b.receipt_id=r.id WHERE "+date("(r.received_at AT TIME ZONE 'Asia/Makassar')::date")+" ORDER BY r.received_at,r.id"},
+ {name:"Riwayat Harga Supplier",headers:["Tanggal","Supplier","Grade","Satuan","Harga","Catatan"],sql:"SELECT (p.effective_at AT TIME ZONE 'Asia/Makassar')::date::text,s.name,g.name,p.unit,p.unit_price::float8,p.note FROM supplier_prices p LEFT JOIN suppliers s ON s.id=p.supplier_id LEFT JOIN coconut_grades g ON g.id=p.grade_id WHERE "+date("(p.effective_at AT TIME ZONE 'Asia/Makassar')::date")+" ORDER BY p.effective_at,p.id"},
+ {name:"Produksi Harian",headers:["Tanggal","Produk","Hasil","Biaya per Unit","Kelapa Rusak","Catatan"],sql:"SELECT d.production_date::text,p.name,o.quantity,o.unit_cost::float8,d.damaged_qty,d.note FROM coconut_production_days d LEFT JOIN coconut_production_day_outputs o ON o.production_id=d.id LEFT JOIN products p ON p.id=o.product_id WHERE "+date("d.production_date")+" ORDER BY d.production_date,d.id"},
+ {name:"Kelapa Rusak",headers:["Tanggal","Jumlah Rusak","Kelapa Digunakan","Catatan"],sql:"SELECT production_date::text,damaged_qty,coconut_used,note FROM coconut_production_days WHERE "+date("production_date")+" AND damaged_qty>0 ORDER BY production_date"},
+ {name:"Nota Baru",headers:["Nomor Nota","Tanggal","Pelanggan","Status","Produk","Jumlah","Harga Satuan"],sql:"SELECT o.document_number,o.ordered_on::text,s.name,o.status,p.name,i.quantity,i.unit_price::float8 FROM customer_orders o LEFT JOIN outlets s ON s.id=o.outlet_id LEFT JOIN customer_order_items i ON i.order_id=o.id LEFT JOIN products p ON p.id=i.product_id WHERE "+date("o.ordered_on")+" ORDER BY o.ordered_on,o.document_number"},
+ {name:"Distribusi",headers:["Tanggal","Nota Order","Nota Pengiriman","Pelanggan","Produk","Jumlah","Harga"],sql:"SELECT d.delivered_on::text,o.document_number,d.document_number,s.name,p.name,i.quantity,i.unit_price::float8 FROM delivery_notes d JOIN customer_orders o ON o.id=d.order_id LEFT JOIN outlets s ON s.id=o.outlet_id LEFT JOIN delivery_note_items i ON i.delivery_id=d.id LEFT JOIN customer_order_items oi ON oi.id=i.order_item_id LEFT JOIN products p ON p.id=oi.product_id WHERE "+date("d.delivered_on")+" ORDER BY d.delivered_on,d.document_number"},
+ {name:"Piutang Baru",headers:["Nomor Nota","Tanggal Kirim","Pelanggan","Bruto","Retur","Terbayar","Sisa Piutang"],sql:"SELECT o.document_number,d.delivered_on::text,s.name,i.gross::float8,COALESCE(r.credit,0)::float8,COALESCE(p.paid,0)::float8,GREATEST(0,i.gross-COALESCE(r.credit,0)-COALESCE(p.paid,0))::float8 FROM delivery_invoices i JOIN delivery_notes d ON d.id=i.delivery_id JOIN customer_orders o ON o.id=d.order_id LEFT JOIN outlets s ON s.id=o.outlet_id LEFT JOIN LATERAL (SELECT SUM(credit_amount) credit FROM delivery_returns WHERE delivery_id=d.id) r ON true LEFT JOIN LATERAL (SELECT SUM(amount) paid FROM delivery_payments WHERE invoice_id=i.id) p ON true WHERE i.status='issued' AND "+date("d.delivered_on")+" ORDER BY d.delivered_on,o.document_number"},
+ {name:"Supplier",master:true,headers:["Nama","Telepon","Alamat","Aktif"],sql:"SELECT name,phone,address,active FROM suppliers ORDER BY name"},
+ {name:"Pelanggan",master:true,headers:["Nama","Telepon","Alamat","Aktif"],sql:"SELECT name,phone,address,active FROM outlets ORDER BY name"},
+ {name:"Stok Saat Unduh",master:true,headers:["Produk","SKU","Jumlah"],sql:"SELECT p.name,p.sku,COALESCE(b.quantity,0) FROM products p LEFT JOIN inventory_balances b ON b.product_id=p.id ORDER BY p.name"},
+ {name:"Stok Historis",master:true,headers:["Sumber","Baris","Tanggal","Jumlah","Status","Catatan"],sql:"SELECT source_sheet,source_row,snapshot_date::text,quantity,status,note FROM legacy_stock_snapshots ORDER BY source_sheet,source_row"},
+ {name:"Inventaris Saat Unduh",master:true,headers:["Nama Aset","Jumlah","Tanggal Pembelian","Vendor","Harga Satuan","Total","Lokasi","Kondisi","Catatan"],sql:"SELECT name,quantity,purchase_date::text,vendor,unit_price::float8,total_cost::float8,location,condition,note FROM inventory_assets ORDER BY name"}
+];
+export async function buildOperationalWorkbook(year:number){
+ validateArchiveYear(year);
+ return transaction(async c=>{
+  await c.query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY");
+  const summary:Cell[][]=[["Laporan KELAPA GO",String(year)],["Keterangan","Data historis dan operasional dipisah; stok dan inventaris merupakan snapshot saat unduhan."],["Sheet","Jumlah baris"]];
+  const sheets:Sheet[]=[{name:"Ringkasan",rows:summary}];
+  for(const d of datasets){
+   const result=await c.query({text:d.sql+" LIMIT 99999",values:d.master?[]:[year],rowMode:"array"});
+   if(result.rows.length>=99999)throw Error("Data terlalu besar. Ekspor per periode lebih pendek diperlukan.");
+   const rows:Cell[][]=result.rows.map((r:unknown[])=>r.map(v=>v===null?null:typeof v==="number"?v:String(v)));
+   sheets.push({name:d.name,rows:[d.headers,...rows]});summary.push([d.name,rows.length]);
+  }
+  return makeWorkbook(sheets);
+ });
+}

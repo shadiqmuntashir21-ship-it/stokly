@@ -15,7 +15,7 @@ export function makeZip(entries:ZipEntry[]):Buffer{
  const time=(date.getUTCHours()<<11)|(date.getUTCMinutes()<<5)|(Math.floor(date.getUTCSeconds()/2));
  const day=((Math.max(1980,date.getUTCFullYear())-1980)<<9)|((date.getUTCMonth()+1)<<5)|date.getUTCDate();
  for(const entry of entries){
-  if(!/^[a-z0-9][a-z0-9_.-]{0,150}$/i.test(entry.name))throw Error("Nama file arsip tidak aman");
+  if(!/^[a-z0-9][a-z0-9_.-]{0,150}$/i.test(entry.name)&&!/^\[Content_Types\]\.xml$|^_rels\/\.rels$|^xl\/(?:workbook\.xml|styles\.xml|_rels\/workbook\.xml\.rels|worksheets\/sheet[1-9][0-9]*\.xml)$/.test(entry.name))throw Error("Nama file arsip tidak aman");
   const name=Buffer.from(entry.name,"utf8"),raw=typeof entry.data==="string"?Buffer.from(entry.data,"utf8"):entry.data;
   const compressed=deflateRawSync(raw,{level:6}),check=crc32(raw);
   if(raw.length>0xffffffff||compressed.length>0xffffffff)throw Error("File arsip terlalu besar");

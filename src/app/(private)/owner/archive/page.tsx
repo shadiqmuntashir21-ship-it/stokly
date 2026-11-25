@@ -32,7 +32,7 @@ export default async function OwnerArchive({searchParams}:{searchParams:Promise<
     <button className="primary-button" type="submit">Lihat Kondisi Tahun</button>
    </form>
    <div style={{padding:20}}>
-    <p><a className="primary-button" href={"/api/owner/archive/"+year}>Unduh ZIP Arsip {year}</a></p>
+    <p><a className="primary-button" href={"/api/owner/archive/"+year}>Unduh ZIP Arsip {year}</a></p><p><a className="primary-button" href={"/api/owner/reports/"+year}>Unduh Excel Laporan Operasional {year}</a></p><p className="form-hint">Excel mencakup arsip historis dan data baru di sheet terpisah. Sheet tanpa transaksi tetap memiliki judul kolom. Arsip ZIP tetap digunakan untuk cadangan operasional.</p>
     <p className="form-hint">Arsip tahun berjalan adalah snapshot sementara. Sebelum menghapus data historis, unduh ulang sesudah semua transaksi terkait selesai dan cocokkan arsip dengan buku fisik.</p>
    </div>
   </Panel>

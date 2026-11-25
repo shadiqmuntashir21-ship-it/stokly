@@ -14,9 +14,9 @@ const cell=(value:unknown)=>{
  if(/^[\s]*[=+\-@\t\r]/.test(str))str="'"+str;
  return '"'+str.replaceAll('"','""')+'"';
 };
-export function encodeCsv(rows:Record<string,unknown>[]):string{
- if(!rows.length)return "\ufeff";
- const names=Object.keys(rows[0]);
+export function encodeCsv(rows:Record<string,unknown>[],columns?:string[]):string{
+ const names=columns??(rows.length?Object.keys(rows[0]):[]);
+ if(!names.length)return "\ufeff";
  return "\ufeff"+[names.map(cell).join(","),...rows.map(row=>names.map(k=>cell(row[k])).join(","))].join("\r\n")+"\r\n";
 }
 export type ArchiveInfo={id:string;archive_year:number;sha256:string;byte_size:string;record_counts:Record<string,number>;exported_at:Date;verified_at:Date|null};
@@ -45,7 +45,8 @@ export async function buildAnnualArchive(year:number,actor:string):Promise<{zip:
    const result=await client.query<{record:Record<string,unknown>}>(sql,item.master?[]:[year]);
    if(result.rows.length>150000)throw new BusinessError("Data terlalu besar untuk satu file. Ekspor per semester diperlukan.");
    const records=result.rows.map(r=>r.record),json=JSON.stringify({table:item.file,year,rows:records});
-   const csv=encodeCsv(records),a=item.file+".json",b=item.file+".csv";
+   const fields=records.length?undefined:(await client.query("SELECT * FROM ("+item.sql+") empty_table LIMIT 0",item.master?[]:[year])).fields.map(f=>f.name);
+   const csv=encodeCsv(records,fields),a=item.file+".json",b=item.file+".csv";
    counts[item.file]=records.length;checksums[a]=hash(json);checksums[b]=hash(csv);
    totalBytes+=Buffer.byteLength(json)+Buffer.byteLength(csv);
    if(totalBytes>100*1024*1024)throw new BusinessError("Arsip lebih besar dari 100 MB. Lakukan ekspor bertahap.");

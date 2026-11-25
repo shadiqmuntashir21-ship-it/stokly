@@ -6,11 +6,13 @@ import {SubmitButton} from "@/components/submit-button";
 import {RupiahField} from "@/components/rupiah-field";
 import {newCashEntryAction,openingCashAction} from "../go-actions";
 import {walletBalances} from "@/lib/operational-cash";
+import {cashReport,reportPeriod,todayWita} from "@/lib/cash-report";
+import {CashReportPanel} from "./report-panel";
 export const dynamic="force-dynamic";
 const today=()=>new Intl.DateTimeFormat("sv-SE",{timeZone:"Asia/Makassar",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 type Entry={id:string;entry_date:string;direction:string;category:string;description:string;amount:string};
 type Legacy={source_row:number;entry_date:string|null;description:string;money_in:string;money_out:string;recorded_balance:string|null;category:string|null};
-export default async function Cash({searchParams}:{searchParams:Promise<{success?:string;error?:string}>}){
+export default async function Cash({searchParams}:{searchParams:Promise<{success?:string;error?:string;from?:string;to?:string}>}){
  const actor=await requireActor(["owner","admin"]);
  const [p,entries,history,wallets,archive]=await Promise.all([
   searchParams,
@@ -19,6 +21,9 @@ export default async function Cash({searchParams}:{searchParams:Promise<{success
   walletBalances(),
   query<{last_balance:string|null;pending:number}>("SELECT (SELECT recorded_balance::text FROM legacy_cash_entries WHERE recorded_balance IS NOT NULL ORDER BY source_row DESC LIMIT 1) last_balance,(SELECT COUNT(*)::int FROM legacy_source_rows s WHERE s.source_sheet='KAS KECIL' AND s.source_row BETWEEN 1388 AND 1428 AND NOT EXISTS(SELECT 1 FROM legacy_cash_entries e WHERE e.source_row=s.source_row)) pending")
  ]);
+ let period=reportPeriod(todayWita(),todayWita());let periodError="";
+ try{period=reportPeriod(p.from||todayWita(),p.to||p.from||todayWita());}catch{periodError="Rentang tanggal tidak valid. Menampilkan hari ini."}
+ const report=await cashReport(period.from,period.to);
  return <>
  <PageHead eyebrow="ADMIN / ARUS KAS" title="Kas Kecil & Kas Besar" description="Saldo operasional dihitung dari saldo awal terverifikasi dan transaksi KELAPA GO baru. Arsip KELAPA GO terpisah."/>
  <Notice success={p.success} error={p.error}/>
@@ -33,13 +38,16 @@ export default async function Cash({searchParams}:{searchParams:Promise<{success
   </form>)}
   <p className="form-hint">CASH masuk Kas Kecil, TF masuk Kas Besar. Jika saldo awal belum ditetapkan, hanya mutasi bersih yang pasti; jangan anggap sebagai saldo fisik.</p>
  </Panel>
+ {periodError&&<p className="form-hint">{periodError}</p>}
+ <CashReportPanel report={report} canBudget={actor.role==="owner"}/>
  <Panel title="Catat kas masuk / keluar"><form action={newCashEntryAction} className="form-grid">
   <input name="requestKey" type="hidden" value={randomUUID()}/>
   <label>Tanggal<input name="date" type="date" defaultValue={today()} required/></label>
   <label>Sumber uang<select name="wallet" defaultValue="SMALL"><option value="SMALL">Kas Kecil</option><option value="LARGE">Kas Besar</option></select></label>
   <label>Jenis transaksi<select name="direction" defaultValue="OUT"><option value="OUT">Kas keluar</option><option value="IN">Kas masuk</option></select></label>
-  <label>Kategori<select name="category" defaultValue="OPERASIONAL"><option value="OPERASIONAL">Operasional</option><option value="PEMBELIAN KELAPA">Pembelian kelapa</option><option value="SETORAN">Setoran</option><option value="TAMBAHAN DANA">Tambahan dana</option><option value="KASBON">Kasbon</option><option value="BBM/TRANSPORT">BBM / transport</option><option value="LAINNYA">Lainnya</option></select></label>
-  <RupiahField name="amount" label="Jumlah (Rp)"/>
+  <label>Kategori<select name="category" defaultValue="OPERASIONAL"><option value="OPERASIONAL">Operasional</option><option value="ASET">Pembelian aset</option><option value="PEMBELIAN KELAPA">Pembelian kelapa</option><option value="SETORAN">Setoran</option><option value="TAMBAHAN DANA">Tambahan dana</option><option value="KASBON">Kasbon</option><option value="BBM/TRANSPORT">BBM / transport</option><option value="LAINNYA">Lainnya</option></select></label>
+  <RupiahField name="amount" label="Total pengeluaran/penerimaan (Rp)"/>
+  <details className="wide edit-detail"><summary>Rincian aset (wajib jika kategori Aset)</summary><div className="form-grid"><label>Nama aset<input name="assetName" maxLength={150}/></label><label>Jumlah aset<input name="assetQuantity" type="number" min="1" step="1"/></label><label>Vendor / toko<input name="assetVendor" maxLength={200}/></label></div><p className="form-hint">Pilih Kas Kecil atau Kas Besar dan Kas keluar. Aset akan masuk inventaris otomatis; jangan input dua kali.</p></details>
   <label className="wide">Keterangan<input name="description" minLength={5} maxLength={400} required placeholder="Contoh: bensin pengantaran hari ini"/></label>
   <SubmitButton className="primary-button">Simpan Kas</SubmitButton>
  </form>

@@ -40,8 +40,8 @@ export async function newCashEntryAction(f:FormData){
  const direction=s(f,"direction");
  if(direction!=="IN"&&direction!=="OUT")redirect("/cash?error=Arah%20kas%20tidak%20valid");
  await safeWrite("/cash",()=>createCashEntry({key:s(f,"requestKey")||randomUUID(),date:s(f,"date"),
-  direction,wallet:s(f,"wallet") as "SMALL"|"LARGE",category:s(f,"category"),amount:Number(f.get("amount")),description:s(f,"description")},actor.id));
- revalidatePath("/cash");revalidatePath("/dashboard");revalidatePath("/owner");redirect("/cash?success=1");
+  direction,wallet:s(f,"wallet") as "SMALL"|"LARGE",category:s(f,"category"),amount:Number(f.get("amount")),description:s(f,"description"),assetName:s(f,"assetName"),assetQuantity:Number(f.get("assetQuantity")),assetVendor:s(f,"assetVendor")},actor.id));
+ revalidatePath("/cash");revalidatePath("/inventory");revalidatePath("/dashboard");revalidatePath("/owner");redirect("/cash?success=1");
 }
 export async function newAssetAction(f:FormData){
  const actor=await requireActor(["owner","admin"]);
