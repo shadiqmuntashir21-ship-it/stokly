@@ -6,8 +6,8 @@ export function reportPeriod(from:string,to:string){
  if(!day(from)||!day(to)||from>to||(Date.parse(to)-Date.parse(from))/86400000>365)throw new BusinessError("Pilih rentang tanggal maksimal 366 hari.");
  return {from,to};
 }
-export type CashRow={date:string;wallet:string;direction:string;category:string;description:string;amount:string};
-type CashTotal={wallet:string;opening:string|null;incoming:string;outgoing:string;operational:string;assets:string;closing:string|null};
+export type CashRow={date:string;wallet:string;direction:string;category:string;description:string;amount:string;id:string;entry_date:string;reference_type:string|null;reference_id:string|null;raw_category:string;asset_name:string|null;asset_quantity:number|null;asset_vendor:string|null;asset_note:string|null};
+type CashTotal={wallet:string;opening:string|null;incoming:string;outgoing:string;operational:string;purchases:string;assets:string;closing:string|null};
 type Budget={date:string;budget:string|null;spent:string};
 const classify="CASE WHEN category LIKE 'KAS BESAR:%' OR category='PENJUALAN TRANSFER' THEN 'LARGE' ELSE 'SMALL' END";
 const operational="regexp_replace(category,'^KAS BESAR: ','') IN ('OPERASIONAL','BBM/TRANSPORT')";
@@ -21,10 +21,11 @@ export async function cashReport(from:string,to:string){
   COALESCE(SUM(e.amount) FILTER(WHERE e.entry_date BETWEEN $1 AND $2 AND e.direction='IN'),0)::text incoming,
   COALESCE(SUM(e.amount) FILTER(WHERE e.entry_date BETWEEN $1 AND $2 AND e.direction='OUT'),0)::text outgoing,
   COALESCE(SUM(e.amount) FILTER(WHERE e.entry_date BETWEEN $1 AND $2 AND e.direction='OUT' AND ${operational}),0)::text operational,
+  COALESCE(SUM(e.amount) FILTER(WHERE e.entry_date BETWEEN $1 AND $2 AND e.direction='OUT' AND regexp_replace(category,'^KAS BESAR: ','')='PEMBELIAN KELAPA'),0)::text purchases,
   COALESCE(SUM(e.amount) FILTER(WHERE e.entry_date BETWEEN $1 AND $2 AND e.direction='OUT' AND regexp_replace(category,'^KAS BESAR: ','')='ASET'),0)::text assets,
   CASE WHEN o.amount IS NULL THEN NULL ELSE (o.amount+COALESCE(SUM(CASE WHEN e.direction='IN' THEN e.amount ELSE -e.amount END) FILTER(WHERE e.entry_date<=$2::date),0))::text END closing
   FROM w LEFT JOIN operational_cash_openings o ON o.wallet=w.wallet LEFT JOIN e ON e.wallet=w.wallet GROUP BY w.wallet,o.amount ORDER BY w.wallet DESC`,[from,to])).rows;
-  const rows=(await c.query<CashRow>(`SELECT entry_date::text date,${classify} wallet,direction,regexp_replace(category,'^KAS BESAR: ','') category,description,amount::text FROM cash_ledger_entries WHERE voided_at IS NULL AND entry_date BETWEEN $1 AND $2 ORDER BY entry_date,created_at,id LIMIT 10001`,[from,to])).rows;
+  const rows=(await c.query<CashRow>(`SELECT e.id::text,e.entry_date::text date,e.entry_date::text, CASE WHEN e.category LIKE 'KAS BESAR:%' OR e.category='PENJUALAN TRANSFER' THEN 'LARGE' ELSE 'SMALL' END wallet,e.direction,regexp_replace(e.category,'^KAS BESAR: ','') category,e.category raw_category,e.description,e.amount::text,e.reference_type,e.reference_id,a.name asset_name,a.quantity asset_quantity,a.vendor asset_vendor,a.note asset_note FROM cash_ledger_entries e LEFT JOIN inventory_assets a ON e.reference_type='asset_purchase' AND e.reference_id=a.id::text WHERE e.voided_at IS NULL AND e.entry_date BETWEEN $1 AND $2 ORDER BY e.entry_date,e.created_at,e.id LIMIT 10001`,[from,to])).rows;
   if(rows.length>10000)throw new BusinessError("Terlalu banyak transaksi. Pilih periode lebih pendek.");
   const budgets=(await c.query<Budget>(`SELECT d::date::text date,b.amount::text budget,
   COALESCE((SELECT SUM(e.amount) FROM cash_ledger_entries e WHERE e.voided_at IS NULL AND e.entry_date=d::date AND e.direction='OUT' AND (${classify})='SMALL' AND ${operational}),0)::text spent

@@ -12,11 +12,11 @@ export async function combinedPurchaseAction(f:FormData){
  let lines:unknown;try{lines=JSON.parse(s(f,"lines"));}catch{redirect("/procurement?error=Grade%20tidak%20valid");}
  if(!Array.isArray(lines))redirect("/procurement?error=Grade%20tidak%20valid");
  await safeWrite("/procurement",()=>recordCombinedPurchase({
-  requestKey:s(f,"requestKey"),supplierId:s(f,"supplierId"),date:s(f,"date"),note:s(f,"note"),
+  requestKey:s(f,"requestKey"),supplierId:s(f,"supplierId"),date:s(f,"date"),note:s(f,"note"),paymentStatus:s(f,"paymentStatus"),smallPayment:Number(s(f,"smallPayment")),largePayment:Number(s(f,"largePayment")),
   lines:lines.map(x=>({gradeId:String(x.gradeId||""),quantity:Number(x.quantity),unitPrice:Number(x.unitPrice),
    passed:Number(x.passed),rejected:Number(x.rejected)}))
  },actor.id));
- revalidatePath("/procurement");revalidatePath("/qc");revalidatePath("/production");revalidatePath("/dashboard");revalidatePath("/owner");
+ revalidatePath("/cash");revalidatePath("/owner/finance");revalidatePath("/procurement");revalidatePath("/qc");revalidatePath("/production");revalidatePath("/dashboard");revalidatePath("/owner");
  redirect("/procurement?success=1");
 }
 export async function dailyProductionAction(f:FormData){

@@ -4,7 +4,7 @@ type Entry={id:string;entry_date:string;category:string;description:string;amoun
 export function CashCorrection({entry:e}:{entry:Entry}){
  const asset=e.reference_type==="asset_purchase",wallet=e.category.startsWith("KAS BESAR:")?"LARGE":"SMALL",category=e.category.replace(/^KAS BESAR: /,"");
  const categories=["OPERASIONAL","PEMBELIAN KELAPA","SETORAN","TAMBAHAN DANA","KASBON","BBM/TRANSPORT","LAINNYA"];
- return <details className="edit-detail"><summary>Koreksi / Batalkan</summary><form className="form-grid" action={cashCorrectionAction}>
+ return <details className="edit-detail"><summary>Edit / Batalkan transaksi</summary><form className="form-grid" action={cashCorrectionAction}>
  <input name="id" value={e.id} type="hidden"/>
  <label>Tanggal<input name="date" type="date" defaultValue={e.entry_date} required/></label>
  <label>Sumber dana<select name="wallet" defaultValue={wallet}><option value="SMALL">Kas Kecil</option><option value="LARGE">Kas Besar</option></select></label>

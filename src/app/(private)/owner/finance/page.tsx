@@ -13,6 +13,7 @@ export default async function OwnerFinance({searchParams}:{searchParams:Promise<
   query<{product:string;qty:number;cost:string;unit_cost:string}>("SELECT p.name product,SUM(o.quantity)::int qty,ROUND(SUM(o.quantity*o.unit_cost),2)::text cost,ROUND(SUM(o.quantity*o.unit_cost)/NULLIF(SUM(o.quantity),0),2)::text unit_cost FROM coconut_production_day_outputs o JOIN products p ON p.id=o.product_id JOIN coconut_production_days d ON d.id=o.production_id WHERE ($1::date IS NULL OR d.production_date>=$1) AND ($2::date IS NULL OR d.production_date<=$2) GROUP BY p.name ORDER BY p.name",[period.from,period.to]),
   query<{wallet:string;category:string;amount:string}>(`SELECT CASE WHEN category LIKE 'KAS BESAR:%' THEN 'Kas Besar' ELSE 'Kas Kecil' END wallet,regexp_replace(category,'^KAS BESAR: ','') category,SUM(amount)::text amount FROM cash_ledger_entries WHERE voided_at IS NULL AND direction='OUT' AND ($1::date IS NULL OR entry_date>=$1) AND ($2::date IS NULL OR entry_date<=$2) GROUP BY 1,2 ORDER BY 1,2`,[period.from,period.to])
  ]);
+ const supplierDebt=(await query<{due:string;unverified:number}>("SELECT COALESCE(SUM(due),0)::text due,COUNT(*) FILTER(WHERE NOT payment_tracking AND active_lines>0)::int unverified FROM v_go_purchase_payment_summary"))[0];
  const net=Number(m.gross)-Number(m.returned);
  return <>
   <PageHead eyebrow="OWNER / KEUANGAN & HPP" title="Pusat Keuangan & HPP" description="Pantau nilai terkirim, uang masuk, piutang, biaya, dan biaya produksi per produk. Jangan menyamakan kas masuk dengan laba."/>
@@ -24,6 +25,7 @@ export default async function OwnerFinance({searchParams}:{searchParams:Promise<
    <section className="metric"><div className="metric-label">Biaya operasional tercatat</div><strong>{rupiah(m.expenses)}</strong></section>
    <section className="metric"><div className="metric-label">Refund belum dibayarkan</div><strong>{rupiah(m.refunds)}</strong></section>
   </div>
+  <Panel title="Utang supplier"><div className="metrics-grid"><section className="metric"><div className="metric-label">Utang terverifikasi (semua waktu)</div><strong>{rupiah(supplierDebt.due)}</strong></section><section className="metric"><div className="metric-label">Pembelian lama belum terverifikasi</div><strong>{supplierDebt.unverified}</strong></section></div><p><Link href="/procurement#supplier-payments">Lihat pembayaran dan pelunasan supplier →</Link></p></Panel>
   <Panel title="HPP produksi per produk" detail={cost.finished_runs+" proses selesai alokasi dari "+cost.production_runs}>
    {hpp.length?<div className="table-wrap"><table><thead><tr><th>Produk</th><th>Hasil produksi teralokasi</th><th>Total biaya</th><th>HPP rata-rata produksi</th><th>Proses</th></tr></thead><tbody>
     {hpp.map(x=><tr key={x.product_id}><td>{x.product}</td><td>{x.produced_qty} {x.unit}</td><td>{rupiah(x.allocated_cost)}</td><td>{rupiah(x.hpp_unit)} / {x.unit}</td><td>{x.production_count}</td></tr>)}

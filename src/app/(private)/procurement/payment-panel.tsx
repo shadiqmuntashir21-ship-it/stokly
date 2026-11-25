@@ -1,0 +1,18 @@
+import {randomUUID} from "node:crypto";
+import {Panel,rupiah} from "@/components/ui";
+import {SubmitButton} from "@/components/submit-button";
+import {supplierPaymentOverview} from "@/lib/supplier-payments";
+import {supplierPaymentAction,voidSupplierPaymentAction} from "./payment-actions";
+export async function SupplierPaymentPanel({today}:{today:string}){
+ const {groups,payments,summary}=await supplierPaymentOverview();
+ return <div id="supplier-payments"><Panel title="Utang & pembayaran supplier" detail="Pembayaran otomatis mengurangi sumber kas yang dipilih">
+ <div className="metrics-grid"><section className="metric"><div className="metric-label">Utang supplier terverifikasi</div><strong>{rupiah(summary.due)}</strong></section><section className="metric"><div className="metric-label">Total pembayaran terintegrasi</div><strong>{rupiah(summary.paid)}</strong></section><section className="metric"><div className="metric-label">Pembelian lama belum terverifikasi</div><strong>{summary.unverified}</strong></section></div>
+ <p className="form-hint">Pembelian lama sebelum integrasi tidak otomatis dianggap utang atau dibayar ulang. Cocokkan dengan bukti kas sebelumnya.</p>
+ <div className="product-manage-list">{groups.map(g=>{
+ const status=g.active_lines===0?"Batal":!g.payment_tracking?"Belum terverifikasi":Number(g.due)===0?"Lunas":Number(g.paid)>0?"Sebagian":"Belum dibayar";
+ return <section key={g.group_id} id={"purchase-"+g.group_id} className="manage-item"><div className="manage-item-head"><div><strong>{g.supplier_name}</strong><p className="small-muted">{g.received_date} · {status}</p></div><div className="manage-values"><span>Total: <b>{rupiah(g.total)}</b></span><span>Bayar: <b>{g.payment_tracking?rupiah(g.paid):"—"}</b></span><span>Utang: <b>{g.due===null?"—":rupiah(g.due)}</b></span></div></div>
+ {g.payment_tracking&&g.active_lines>0&&Number(g.due)>0&&<details className="edit-detail"><summary>Bayar / lunasi supplier</summary><form action={supplierPaymentAction} className="form-grid"><input type="hidden" name="groupId" value={g.group_id}/><input type="hidden" name="requestKey" value={randomUUID()}/><label>Tanggal bayar<input name="date" type="date" min={g.received_date} max={today} defaultValue={today} required/></label><label>Kas Kecil (Rp)<input name="small" type="number" step=".01" min="0" max={Number(g.due)} defaultValue="0" required/></label><label>Kas Besar (Rp)<input name="large" type="number" step=".01" min="0" max={Number(g.due)} defaultValue="0" required/></label><label>Catatan / bukti<input name="note" maxLength={400}/></label><SubmitButton className="primary-button">Simpan Pembayaran</SubmitButton></form></details>}
+ {payments.filter(p=>p.group_id===g.group_id).map(p=><details className="edit-detail" key={p.id}><summary>{p.entry_date} · {p.category.startsWith("KAS BESAR:")?"Kas Besar":"Kas Kecil"} · {rupiah(p.amount)} · {p.voided_at?"Batal":"Aktif"}</summary><p className="form-hint">{p.description}</p>{!p.voided_at&&<form action={voidSupplierPaymentAction} className="form-grid"><input type="hidden" name="id" value={p.id}/><label>Alasan salah input<input name="reason" minLength={5} maxLength={400} required/></label><label className="wide"><input name="confirm" value="1" type="checkbox" required/> Ini kesalahan pencatatan, bukan pembayaran nyata yang masih berlaku. Saya sudah memeriksa bukti.</label><SubmitButton className="primary-button">Batalkan pencatatan pembayaran</SubmitButton></form>}</details>)}
+ </section>})}</div><p className="form-hint">Menampilkan maksimal 200 pembelian dan 1.000 catatan pembayaran terbaru; ringkasan mencakup semua pembelian. Pembayaran benar yang dikembalikan supplier memerlukan rekonsiliasi, bukan pembatalan input.</p>
+ </Panel></div>;
+}

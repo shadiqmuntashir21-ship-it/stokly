@@ -1,5 +1,6 @@
 import {query,transaction} from "@/lib/db";
 import {BusinessError} from "@/lib/operations";
+import {lockPurchaseCash,verifyPurchaseCorrection} from "@/lib/supplier-payments";
 const uuid=(s:string)=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
 const date=(s:string)=>/^\d{4}-\d{2}-\d{2}$/.test(s)&&Number.isFinite(Date.parse(s+"T00:00:00Z"))&&new Date(s+"T00:00:00Z").toISOString().slice(0,10)===s;
 export async function transactionAudit(entityType:string){
@@ -11,6 +12,9 @@ export async function correctPurchase(input:{id:string;mode:string;reason:string
  if(!uuid(id)||!["edit","void"].includes(mode)||reason.trim().length<5||reason.length>400)throw new BusinessError("Koreksi harus memiliki transaksi dan alasan yang valid.");
  if(mode==="edit"&&(!uuid(input.supplierId)||!uuid(input.gradeId)||!date(input.date)||!Number.isSafeInteger(input.quantity)||input.quantity<1||input.quantity>9999999||!Number.isFinite(input.price)||input.price<=0||input.price>1e9||input.note.length>400))throw new BusinessError("Data pembelian tidak valid.");
  return transaction(async c=>{
+  await lockPurchaseCash(c);
+  const paymentGroup=(await c.query<{group_id:string}>("SELECT group_id::text FROM kelapa_go_purchase_rows WHERE receipt_id=$1",[id])).rows[0];
+  if(paymentGroup)await c.query("SELECT id FROM kelapa_go_purchase_groups WHERE id=$1 FOR UPDATE",[paymentGroup.group_id]);
   const result=await c.query<Purchase>(`SELECT r.id::text,b.id::text batch_id,r.supplier_id::text,r.grade_id::text,r.quantity,r.price_per_butir::text,(r.received_at AT TIME ZONE 'Asia/Makassar')::date::text received_date,b.accepted_qty,b.rejected_qty,b.consumed_qty,b.voided_at::text,r.note FROM coconut_batches b JOIN coconut_receipts r ON r.id=b.receipt_id WHERE r.id=$1 FOR UPDATE OF b,r`,[id]);
   const old=result.rows[0];
   if(!old||old.voided_at)throw new BusinessError("Pembelian tidak ditemukan atau sudah dibatalkan.");
@@ -39,6 +43,7 @@ export async function correctPurchase(input:{id:string;mode:string;reason:string
    await c.query("UPDATE coconut_batches SET received_qty=$2 WHERE id=$1",[old.batch_id,input.quantity]);
    await c.query("UPDATE supplier_prices SET supplier_id=$2,grade_id=$3,unit_price=$4,note=$5 WHERE source_receipt_id=$1 AND voided_at IS NULL",[id,input.supplierId,input.gradeId,input.price,"Harga pembelian "+input.date]);
   }
+  if(paymentGroup)await verifyPurchaseCorrection(c,paymentGroup.group_id,old.supplier_id);
   await c.query("INSERT INTO transaction_correction_events(entity_type,entity_id,action,reason,previous_state,next_state,actor_id) VALUES('purchase',$1,$2,$3,$4::jsonb,$5::jsonb,$6)",[id,mode,reason.trim(),before,JSON.stringify(mode==="void"?{voided:true}:input),actor]);
   await c.query("INSERT INTO activity_logs(actor_id,action,entity,entity_id) VALUES($1,$2,'coconut_receipt',$3)",[actor,"purchase."+mode,id]);
  });

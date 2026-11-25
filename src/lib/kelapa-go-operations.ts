@@ -1,18 +1,22 @@
 import {randomUUID} from "node:crypto";
 import {query,transaction} from "@/lib/db";
 import {BusinessError} from "@/lib/operations";
+import {appendSupplierPayment,lockPurchaseCash,validateInitialPayment} from "@/lib/supplier-payments";
 
 const uuid=(s:string)=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
 const day=(s:string)=>/^\d{4}-\d{2}-\d{2}$/.test(s)&&!Number.isNaN(Date.parse(s+"T00:00:00Z"));
 const count=(n:number)=>Number.isSafeInteger(n)&&n>=0&&n<10000000;
 const price=(n:number)=>Number.isFinite(n)&&n>=0&&n<=1000000000&&Number.isSafeInteger(Math.round(n*100));
 export type PurchaseLine={gradeId:string;quantity:number;unitPrice:number;passed:number;rejected:number};
-export async function recordCombinedPurchase(input:{requestKey:string;supplierId:string;date:string;note:string;lines:PurchaseLine[]},actor:string){
+export async function recordCombinedPurchase(input:{requestKey:string;supplierId:string;date:string;note:string;lines:PurchaseLine[];paymentStatus:string;smallPayment:number;largePayment:number},actor:string){
  if(!uuid(input.requestKey)||!uuid(input.supplierId)||!day(input.date)||!Array.isArray(input.lines)||
  input.lines.length<1||input.lines.length>15||input.lines.some(x=>!uuid(x.gradeId)||!count(x.quantity)||x.quantity<1||
  (!price(x.unitPrice)||x.unitPrice<=0)||!count(x.passed)||!count(x.rejected)||x.passed+x.rejected>x.quantity)||
  new Set(input.lines.map(x=>x.gradeId)).size!==input.lines.length)throw new BusinessError("Periksa grade, jumlah, harga dan hasil QC. QC tidak boleh melebihi pembelian.");
+ const total=input.lines.reduce((sum,x)=>sum+Math.round(x.unitPrice*100)*x.quantity,0)/100;
+ validateInitialPayment(input.paymentStatus,total,input.smallPayment,input.largePayment);
  return transaction(async c=>{
+  await lockPurchaseCash(c);
   const old=await c.query<{id:string}>("SELECT id::text FROM kelapa_go_purchase_groups WHERE request_key=$1",[input.requestKey]);
   if(old.rows[0])return old.rows[0].id;
   const supplier=await c.query("SELECT id FROM suppliers WHERE id=$1 AND active=true",[input.supplierId]);
@@ -20,11 +24,11 @@ export async function recordCombinedPurchase(input:{requestKey:string;supplierId
   const gs=await c.query<{id:string}>("SELECT id::text FROM coconut_grades WHERE active=true AND id=ANY($1::uuid[])",[input.lines.map(x=>x.gradeId)]);
   if(gs.rowCount!==input.lines.length)throw new BusinessError("Grade tidak tersedia.");
   const group=await c.query<{id:string}>(
-   "INSERT INTO kelapa_go_purchase_groups(request_key,supplier_id,received_date,note,actor_id) VALUES($1,$2,$3,$4,$5) RETURNING id::text",
+   "INSERT INTO kelapa_go_purchase_groups(request_key,supplier_id,received_date,note,actor_id,payment_tracking) VALUES($1,$2,$3,$4,$5,true) RETURNING id::text",
    [input.requestKey,input.supplierId,input.date,input.note.slice(0,400),actor]);
   for(const x of input.lines){
    const r=await c.query<{id:string}>(
-    "INSERT INTO coconut_receipts(request_key,supplier_id,grade_id,quantity,price_per_butir,note,created_by,received_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8::date + TIME '12:00') RETURNING id::text",
+    "INSERT INTO coconut_receipts(request_key,supplier_id,grade_id,quantity,price_per_butir,note,created_by,received_at) VALUES($1,$2,$3,$4,$5,$6,$7,($8::date + TIME '12:00') AT TIME ZONE 'Asia/Makassar') RETURNING id::text",
     [randomUUID(),input.supplierId,x.gradeId,x.quantity,x.unitPrice,"Pembelian+QC · "+input.note.slice(0,250),actor,input.date]);
    await c.query("INSERT INTO coconut_batches(receipt_id,received_qty,accepted_qty,rejected_qty) VALUES($1,$2,$3,$4)",
     [r.rows[0].id,x.quantity,x.passed,x.rejected]);
@@ -37,6 +41,7 @@ export async function recordCombinedPurchase(input:{requestKey:string;supplierId
    await c.query("INSERT INTO supplier_prices(supplier_id,grade_id,unit,unit_price,note,created_by,source_receipt_id) VALUES($1,$2,'BUTIR',$3,$4,$5,$6)",
     [input.supplierId,x.gradeId,x.unitPrice,"Harga pembelian "+input.date,actor,r.rows[0].id]);
   }
+  if(input.smallPayment+input.largePayment>0)await appendSupplierPayment(c,{groupId:group.rows[0].id,key:input.requestKey,date:input.date,small:input.smallPayment,large:input.largePayment,note:"Pembayaran saat pembelian"},actor);
   await c.query("INSERT INTO activity_logs(actor_id,action,entity,entity_id) VALUES($1,'go.purchase.qc','purchase',$2)",
    [actor,group.rows[0].id]);
   return group.rows[0].id;
