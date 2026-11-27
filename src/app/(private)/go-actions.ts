@@ -2,21 +2,22 @@
 import {randomUUID} from "node:crypto";
 import {requireActor,requireOwner} from "@/lib/access";
 import {safeWrite} from "@/lib/safe-action";
+import {BusinessError} from "@/lib/operations";
 import {setOpeningBalance} from "@/lib/operational-cash";
 import {recordCombinedPurchase,recordDailyProduction,registerVoidReceipt,createCashEntry,addInventoryAsset,moveInventoryAsset} from "@/lib/kelapa-go-operations";
 import {revalidatePath} from "next/cache";
 import {redirect} from "next/navigation";
 const s=(f:FormData,k:string)=>String(f.get(k)||"");
-export async function combinedPurchaseAction(f:FormData){
+export async function combinedPurchaseAction(_previous:{error:string},f:FormData):Promise<{error:string}>{
  const actor=await requireActor(["owner","admin"]);
- let lines:unknown;try{lines=JSON.parse(s(f,"lines"));}catch{redirect("/procurement?error=Grade%20tidak%20valid");}
- if(!Array.isArray(lines))redirect("/procurement?error=Grade%20tidak%20valid");
- await safeWrite("/procurement",()=>recordCombinedPurchase({
+ let lines:unknown;try{lines=JSON.parse(s(f,"lines"));}catch{return {error:"Grade tidak valid."};}
+ if(!Array.isArray(lines))return {error:"Grade tidak valid."};
+ try{await recordCombinedPurchase({
   requestKey:s(f,"requestKey"),supplierId:s(f,"supplierId"),date:s(f,"date"),note:s(f,"note"),paymentStatus:s(f,"paymentStatus"),smallPayment:Number(s(f,"smallPayment")),largePayment:Number(s(f,"largePayment")),
   lines:lines.map(x=>({gradeId:String(x.gradeId||""),quantity:Number(x.quantity),unitPrice:Number(x.unitPrice),
    passed:Number(x.passed),rejected:Number(x.rejected)}))
- },actor.id));
- revalidatePath("/cash");revalidatePath("/owner/finance");revalidatePath("/procurement");revalidatePath("/qc");revalidatePath("/production");revalidatePath("/dashboard");revalidatePath("/owner");
+ },actor.id);}catch(error){return {error:error instanceof BusinessError?error.message:"Pembelian tidak dapat disimpan. Periksa isian dan coba kembali."};}
+ revalidatePath("/cash");revalidatePath("/expenses");revalidatePath("/owner/finance");revalidatePath("/procurement");revalidatePath("/qc");revalidatePath("/production");revalidatePath("/dashboard");revalidatePath("/owner");
  redirect("/procurement?success=1");
 }
 export async function dailyProductionAction(f:FormData){

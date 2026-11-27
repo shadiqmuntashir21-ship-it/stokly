@@ -1,6 +1,7 @@
 import {SubmitButton} from "@/components/submit-button";
 import Link from "next/link";
 import {query} from "@/lib/db";
+import {walletBalances} from "@/lib/operational-cash";
 import {GoPurchaseComposer} from "@/components/go-purchase-composer";
 import { randomUUID } from "node:crypto";
 import { requireActor } from "@/lib/access";
@@ -14,9 +15,11 @@ import { addGradeAction,editGradeAction,addSupplierPriceAction,receiveAction } f
 export const dynamic="force-dynamic";
 const today=()=>new Intl.DateTimeFormat("sv-SE",{timeZone:"Asia/Makassar",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 export default async function Procurement({searchParams}:{searchParams:Promise<{success?:string;error?:string}>}){
- await requireActor(["owner","admin"]);
- const [supplierList,grades,prices,receipts,params,latestPrices]=await Promise.all([suppliers(),listGrades(),listSupplierPrices(),listCoconutReceipts(true),searchParams,
- query<{supplier_id:string;grade_id:string;unit_price:string}>("SELECT DISTINCT ON (supplier_id,grade_id) supplier_id::text,grade_id::text,unit_price::text FROM supplier_prices WHERE voided_at IS NULL ORDER BY supplier_id,grade_id,effective_at DESC,id DESC")]);
+ const actor=await requireActor(["owner","admin"]);
+ const [supplierList,grades,prices,receipts,params,latestPrices,wallets]=await Promise.all([suppliers(),listGrades(),listSupplierPrices(),listCoconutReceipts(true),searchParams,
+ query<{supplier_id:string;grade_id:string;unit_price:string}>("SELECT DISTINCT ON (supplier_id,grade_id) supplier_id::text,grade_id::text,unit_price::text FROM supplier_prices WHERE voided_at IS NULL ORDER BY supplier_id,grade_id,effective_at DESC,id DESC"),walletBalances()]);
+ const balance=(wallet:"SMALL"|"LARGE")=>{const w=wallets.find(x=>x.wallet===wallet);return !w||w.balance===null?null:Number(w.balance);};
+ const available={SMALL:balance("SMALL"),LARGE:balance("LARGE")};
  const audit=await transactionAudit("purchase");
  const activeSuppliers=supplierList.filter(s=>s.active);
  const ready=activeSuppliers.length>0&&grades.length>0;
@@ -24,9 +27,9 @@ export default async function Procurement({searchParams}:{searchParams:Promise<{
  description="Catat grade A/B/C, harga berbeda, hasil lolos/afkir dan sisa belum QC dalam satu proses."/><Notice success={params.success} error={params.error}/>{params.success&&<p className="form-hint"><Link href="/qc">Pembelian berhasil. Jika QC belum selesai, lanjutkan pemeriksaan di QC →</Link></p>}
  <Panel title="Pembelian sekaligus QC" detail="Satu supplier, banyak grade — isi jumlah dan harga tiap grade, lalu simpan sekali">
   {!ready&&<p className="form-hint">Siapkan minimal satu supplier dan grade. Pengaturan grade ada di bawah.</p>}
-  <GoPurchaseComposer suppliers={activeSuppliers} grades={grades} prices={latestPrices} requestKey={randomUUID()} date={today()}/>
+  <GoPurchaseComposer suppliers={activeSuppliers} grades={grades} prices={latestPrices} requestKey={randomUUID()} date={today()} available={available} isOwner={actor.role==="owner"}/>
  </Panel>
- <SupplierPaymentPanel today={today()}/>
+ <SupplierPaymentPanel today={today()} available={available}/>
  <details className="edit-detail"><summary>Pengaturan lanjutan: grade & harga supplier</summary>
  <Panel title="Kategori ketebalan kelapa" detail="Buat standar ukuran dan kualitas yang mudah digunakan saat pembelian serta QC"><form action={addGradeAction} className="form-grid">
   <label>Kode grade<input name="code" required minLength={2} maxLength={40} placeholder="GRADE-A"/></label>
