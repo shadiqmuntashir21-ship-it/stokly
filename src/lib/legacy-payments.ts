@@ -37,7 +37,7 @@ export async function legacyReceiptsSummary(){
 }
 export async function legacyOutletSummary(){
  return query<{outlet_name:string;receipt_count:number;total_pcs:number;net_sales:string;confirmed_unpaid:string;needs_reconciliation:number}>(
-  "SELECT outlet_name,receipt_count,total_pcs,net_sales::text,confirmed_unpaid::text,needs_reconciliation FROM v_go_outlet_summary_current ORDER BY net_sales DESC LIMIT 200");
+  "SELECT outlet_name,receipt_count,total_pcs,net_sales::text,confirmed_unpaid::text,needs_reconciliation FROM v_go_outlet_summary_current v ORDER BY v.total_pcs DESC, v.net_sales DESC, v.outlet_name");
 }
 
 export async function recordLegacyBalanceReview(input:{key:string;number:string;date:string;newDue:number;reason:string},actor:string){

@@ -9,6 +9,6 @@ export async function purchaseCorrectionAction(f:FormData){
  const s=(k:string)=>String(f.get(k)||"");
  if(s("confirm")!=="1")redirect("/procurement?error=Konfirmasi%20wajib");
  await safeWrite("/procurement",()=>correctPurchase({id:s("id"),mode:s("mode"),reason:s("reason"),supplierId:s("supplierId"),gradeId:s("gradeId"),date:s("date"),quantity:Number(s("quantity")),price:Number(s("price")),note:s("note")},actor.id));
- for(const path of ["/procurement","/qc","/production","/dashboard","/owner","/owner/operations","/owner/archive"])revalidatePath(path);
+ for(const path of ["/procurement","/qc","/production","/dashboard","/owner","/owner/operations","/owner/archive","/expenses","/owner/finance","/cash"])revalidatePath(path);
  redirect("/procurement?success=1");
 }

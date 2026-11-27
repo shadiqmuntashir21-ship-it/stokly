@@ -22,7 +22,7 @@ export default async function Procurement({searchParams}:{searchParams:Promise<{
  const ready=activeSuppliers.length>0&&grades.length>0;
  return <><PageHead eyebrow="PENGADAAN / BAHAN BAKU" title="Pembelian Kelapa + QC"
  description="Catat grade A/B/C, harga berbeda, hasil lolos/afkir dan sisa belum QC dalam satu proses."/><Notice success={params.success} error={params.error}/>{params.success&&<p className="form-hint"><Link href="/qc">Pembelian berhasil. Jika QC belum selesai, lanjutkan pemeriksaan di QC →</Link></p>}
- <Panel title="Pembelian sekaligus QC" detail="Multi-grade dan harga per butir · sisa QC tetap terlacak">
+ <Panel title="Pembelian sekaligus QC" detail="Satu supplier, banyak grade — isi jumlah dan harga tiap grade, lalu simpan sekali">
   {!ready&&<p className="form-hint">Siapkan minimal satu supplier dan grade. Pengaturan grade ada di bawah.</p>}
   <GoPurchaseComposer suppliers={activeSuppliers} grades={grades} prices={latestPrices} requestKey={randomUUID()} date={today()}/>
  </Panel>

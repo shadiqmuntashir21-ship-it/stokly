@@ -47,9 +47,9 @@ export default async function KelapaGoHistory({searchParams}:{searchParams:Promi
    {summary.unpaid.slice(0,35).map(x=><tr key={x.document_number}><td>{x.document_number}</td><td>{x.outlet_name}</td><td>{x.issued_on||"—"}</td><td>{x.needs_reconciliation?"Perlu cek":formatMoneyCompact(x.confirmed_due??0)}</td><td>{x.status}</td></tr>)}
   </tbody></table></div>
  </Panel>
- <Panel title="Pivot Kwitansi / JUALAN — ringkasan outlet otomatis">
+ <Panel title="Pivot Kwitansi / JUALAN — ringkasan outlet otomatis" detail="Urutan total PCS terbesar ke terkecil">
   <div className="table-wrap"><table><thead><tr><th>Outlet</th><th>Nota</th><th>PCS</th><th>Penjualan bersih historis</th><th>Piutang pasti</th><th>Butuh rekonsiliasi</th></tr></thead><tbody>
-   {outlets.slice(0,60).map(x=><tr key={x.outlet_name}><td>{x.outlet_name}</td><td>{formatCount(x.receipt_count)}</td><td>{formatCount(x.total_pcs)}</td><td><span className="kg-money-cell" title={rupiah(x.net_sales)}>{formatMoneyCompact(x.net_sales)}</span></td><td><span className="kg-money-cell" title={rupiah(x.confirmed_unpaid)}>{formatMoneyCompact(x.confirmed_unpaid)}</span></td><td>{formatCount(x.needs_reconciliation)}</td></tr>)}
+   {outlets.map(x=><tr key={x.outlet_name}><td>{x.outlet_name}</td><td>{formatCount(x.receipt_count)}</td><td>{formatCount(x.total_pcs)}</td><td><span className="kg-money-cell" title={rupiah(x.net_sales)}>{formatMoneyCompact(x.net_sales)}</span></td><td><span className="kg-money-cell" title={rupiah(x.confirmed_unpaid)}>{formatMoneyCompact(x.confirmed_unpaid)}</span></td><td>{formatCount(x.needs_reconciliation)}</td></tr>)}
   </tbody></table></div>
   <p className="form-hint">Angka historis dan transaksi baru dipisahkan, sehingga laporan tidak menggandakan kuitansi yang sama.</p>
  </Panel>
